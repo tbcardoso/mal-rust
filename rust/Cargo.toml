@@ -1,0 +1,6 @@
+[package]
+name = "malrs"
+version = "0.1.0"
+authors = ["Tiago Cardoso <tbcardoso@outlook.com>"]
+
+[dependencies]

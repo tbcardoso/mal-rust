@@ -12,6 +12,7 @@
 .node-gyp
 package-lock.json
 .elm
+.idea
 */experiments
 */node_modules
 *.o
