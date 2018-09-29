@@ -1,4 +1,4 @@
-STEPS =
+STEPS = step0_repl
 
 .PHONY: all
 all: build
