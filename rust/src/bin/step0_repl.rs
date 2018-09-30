@@ -1,16 +1,19 @@
-use std::io;
-use std::io::Write;
+extern crate malrs;
+
+use malrs::readline::Readline;
 
 fn main() {
+    let mut readline = Readline::new();
+
     loop {
-        print!("user> ");
-        io::stdout().flush().unwrap();
-
-        let mut input = String::new();
-        io::stdin().read_line(&mut input)
-            .expect("Failed to read line");
-
-        print!("{}", rep(input));
+        match readline.readline() {
+            None => break,
+            Some(line) => {
+                if !line.is_empty() {
+                    println!("{}", rep(line.to_string()));
+                }
+            }
+        }
     }
 }
 
