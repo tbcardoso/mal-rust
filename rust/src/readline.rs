@@ -1,7 +1,5 @@
-extern crate rustyline;
-
-use self::rustyline::error::ReadlineError;
-use self::rustyline::{Config, Editor};
+use rustyline::error::ReadlineError;
+use rustyline::{Config, Editor};
 
 pub struct Readline {
     editor: Editor<()>,
