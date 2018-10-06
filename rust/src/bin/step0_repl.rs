@@ -15,6 +15,8 @@ fn main() {
             }
         }
     }
+
+    readline.save_history();
 }
 
 fn rep(s: String) -> String {
