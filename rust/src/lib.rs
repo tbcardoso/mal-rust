@@ -5,4 +5,5 @@ extern crate rustyline;
 
 pub mod reader;
 pub mod readline;
+pub mod tokenizer;
 pub mod types;
