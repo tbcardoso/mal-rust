@@ -26,7 +26,7 @@ impl Reader {
     }
 }
 
-fn read_str(program: &str) -> MalResult {
+pub fn read_str(program: &str) -> MalResult {
     let tokens = tokenize(program);
 
     if tokens.is_empty() {

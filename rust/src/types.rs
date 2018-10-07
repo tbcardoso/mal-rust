@@ -1,6 +1,6 @@
 #[derive(Debug, PartialEq)]
 pub struct MalValue {
-    mal_type: MalValueType,
+    pub mal_type: MalValueType,
     // Possible extra fields: line, column
 }
 
