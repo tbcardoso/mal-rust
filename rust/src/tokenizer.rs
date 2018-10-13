@@ -2,10 +2,11 @@ use regex::Regex;
 use types::MalToken;
 use types::MalTokenType;
 use types::MalTokenType::*;
+use types::MalError;
 
-pub fn tokenize(program: &str) -> Vec<MalToken> {
+pub fn tokenize(program: &str) -> Result<Vec<MalToken>, MalError> {
     const TOKEN_RE_STR: &str =
-        r##"[\s,]*(~@|[\[\]{}()'`~^@]|"(?:\\.|[^\\"])*"|;.*|[^\s\[\]{}('"`,;)]*)"##;
+        r##"[\s,]*(~@|[\[\]{}()'`~^@]|"(?:\\.|[^\\"])*"?|;.*|[^\s\[\]{}('"`,;)]+)"##;
     lazy_static! {
         static ref TOKEN_RE: Regex = Regex::new(TOKEN_RE_STR).unwrap();
     }
@@ -13,42 +14,68 @@ pub fn tokenize(program: &str) -> Vec<MalToken> {
     let mut tokens: Vec<MalToken> = vec![];
 
     for capture in TOKEN_RE.captures_iter(program) {
-        if let Some(token_type) = scan_token(&capture[1]) {
+        if let Some(token_type) = scan_token(&capture[1])? {
             tokens.push(MalToken::new(token_type))
         }
     }
 
-    tokens
+    Ok(tokens)
 }
 
-fn scan_token(text: &str) -> Option<MalTokenType> {
-    match text.chars().next()? {
-        '(' => Some(LParen),
-        ')' => Some(RParen),
-        '{' => Some(LCurly),
-        '}' => Some(RCurly),
-        ']' => Some(RBracket),
-        '[' => Some(LBracket),
-        ';' => None,
-        //'"' => Some(StringLiteral),
-        _ => scan_nonspecial_token(text),
+fn scan_token(text: &str) -> Result<Option<MalTokenType>, MalError> {
+    match text.chars().next().ok_or_else(|| MalError::Tokenizer("Unexpected EOF".to_string()))? {
+        '(' => Ok(Some(LParen)),
+        ')' => Ok(Some(RParen)),
+        '{' => Ok(Some(LCurly)),
+        '}' => Ok(Some(RCurly)),
+        ']' => Ok(Some(RBracket)),
+        '[' => Ok(Some(LBracket)),
+        ';' => Ok(None),
+        '"' => Ok(Some(Str(scan_string(text)?))),
+        _ => Ok(Some(scan_nonspecial_token(text)?)),
     }
 }
 
-fn scan_nonspecial_token(text: &str) -> Option<MalTokenType> {
+fn scan_string(text: &str) -> Result<String, MalError> {
+    let mut unescaped_str = String::new();
+
+    let mut chars = text.chars();
+    chars.next().unwrap();
+
+    loop {
+        match chars.next() {
+            Some('\"') => break,
+            Some('\\') => unescaped_str.push(unescape_char(chars.next()
+                .ok_or_else(|| MalError::Tokenizer("Expected '\"', got EOF".to_string()))?)),
+            Some(c) => unescaped_str.push(c),
+            None => return Err(MalError::Tokenizer("Expected '\"', got EOF".to_string())),
+        }
+    }
+
+    Ok(unescaped_str.to_string())
+}
+
+fn unescape_char(c: char) -> char {
+    match c {
+        'n' => '\n',
+        other => other,
+    }
+}
+
+fn scan_nonspecial_token(text: &str) -> Result<MalTokenType, MalError> {
     const NUMBER_RE_STR: &str = r#"^-?\d+\.?\d*$"#;
     lazy_static! {
         static ref NUMBER_RE: Regex = Regex::new(NUMBER_RE_STR).unwrap();
     }
 
     if NUMBER_RE.is_match(&text) {
-        return Some(Number(
+        return Ok(Number(
             text.parse()
                 .expect(&format!("Error parsing number: {}", text)),
         ));
     }
 
-    Some(Symbol(text.to_string()))
+    Ok(Symbol(text.to_string()))
 }
 
 #[cfg(test)]
@@ -57,41 +84,41 @@ mod tests {
 
     #[test]
     fn test_tokenize_empty() {
-        assert_eq!(tokenize(""), vec![]);
+        assert_eq!(tokenize(""), Ok(vec![]));
     }
 
     #[test]
     fn test_tokenize_blanks() {
-        assert_eq!(tokenize("   "), vec![]);
-        assert_eq!(tokenize("\t"), vec![]);
-        assert_eq!(tokenize("\n"), vec![]);
-        assert_eq!(tokenize("\t  \t\n "), vec![]);
+        assert_eq!(tokenize("   "), Ok(vec![]));
+        assert_eq!(tokenize("\t"), Ok(vec![]));
+        assert_eq!(tokenize("\n"), Ok(vec![]));
+        assert_eq!(tokenize("\t  \t\n "), Ok(vec![]));
     }
 
     #[test]
     fn test_tokenize_comma() {
-        assert_eq!(tokenize(","), vec![]);
-        assert_eq!(tokenize(",,,,"), vec![]);
+        assert_eq!(tokenize(","), Ok(vec![]));
+        assert_eq!(tokenize(",,,,"), Ok(vec![]));
     }
 
     #[test]
     fn test_tokenize_comments() {
-        assert_eq!(tokenize(";"), vec![]);
-        assert_eq!(tokenize(";;;;;;"), vec![]);
-        assert_eq!(tokenize(";abc 123 qwe123 ()"), vec![]);
+        assert_eq!(tokenize(";"), Ok(vec![]));
+        assert_eq!(tokenize(";;;;;;"), Ok(vec![]));
+        assert_eq!(tokenize(";abc 123 qwe123 ()"), Ok(vec![]));
     }
 
     #[test]
     fn test_tokenize_parens() {
-        assert_eq!(tokenize("("), vec![MalToken::new(LParen)]);
-        assert_eq!(tokenize(")"), vec![MalToken::new(RParen)]);
+        assert_eq!(tokenize("("), Ok(vec![MalToken::new(LParen)]));
+        assert_eq!(tokenize(")"), Ok(vec![MalToken::new(RParen)]));
         assert_eq!(
             tokenize("()"),
-            vec![MalToken::new(LParen), MalToken::new(RParen)]
-        );
+            Ok(vec![MalToken::new(LParen), MalToken::new(RParen)]
+        ));
         assert_eq!(
             tokenize("))((())"),
-            vec![
+            Ok(vec![
                 MalToken::new(RParen),
                 MalToken::new(RParen),
                 MalToken::new(LParen),
@@ -100,20 +127,20 @@ mod tests {
                 MalToken::new(RParen),
                 MalToken::new(RParen),
             ]
-        );
+        ));
     }
 
     #[test]
     fn test_tokenize_curly_brackets() {
-        assert_eq!(tokenize("{"), vec![MalToken::new(LCurly)]);
-        assert_eq!(tokenize("}"), vec![MalToken::new(RCurly)]);
+        assert_eq!(tokenize("{"), Ok(vec![MalToken::new(LCurly)]));
+        assert_eq!(tokenize("}"), Ok(vec![MalToken::new(RCurly)]));
         assert_eq!(
             tokenize("{}"),
-            vec![MalToken::new(LCurly), MalToken::new(RCurly)]
-        );
+            Ok(vec![MalToken::new(LCurly), MalToken::new(RCurly)]
+        ));
         assert_eq!(
             tokenize("{{}}{{"),
-            vec![
+            Ok(vec![
                 MalToken::new(LCurly),
                 MalToken::new(LCurly),
                 MalToken::new(RCurly),
@@ -121,20 +148,20 @@ mod tests {
                 MalToken::new(LCurly),
                 MalToken::new(LCurly),
             ]
-        );
+        ));
     }
 
     #[test]
     fn test_tokenize_square_brackets() {
-        assert_eq!(tokenize("["), vec![MalToken::new(LBracket)]);
-        assert_eq!(tokenize("]"), vec![MalToken::new(RBracket)]);
+        assert_eq!(tokenize("["), Ok(vec![MalToken::new(LBracket)]));
+        assert_eq!(tokenize("]"), Ok(vec![MalToken::new(RBracket)]));
         assert_eq!(
             tokenize("[]"),
-            vec![MalToken::new(LBracket), MalToken::new(RBracket)]
-        );
+            Ok(vec![MalToken::new(LBracket), MalToken::new(RBracket)]
+        ));
         assert_eq!(
             tokenize("][[]]]"),
-            vec![
+            Ok(vec![
                 MalToken::new(RBracket),
                 MalToken::new(LBracket),
                 MalToken::new(LBracket),
@@ -142,45 +169,66 @@ mod tests {
                 MalToken::new(RBracket),
                 MalToken::new(RBracket),
             ]
-        );
+        ));
     }
 
     #[test]
     fn test_tokenize_numbers() {
-        assert_eq!(tokenize("1"), vec![MalToken::new(Number(1.))]);
-        assert_eq!(tokenize("-1"), vec![MalToken::new(Number(-1.))]);
-        assert_eq!(tokenize("123456"), vec![MalToken::new(Number(123456.))]);
-        assert_eq!(tokenize("12.2"), vec![MalToken::new(Number(12.2))]);
-        assert_eq!(tokenize("-123.99"), vec![MalToken::new(Number(-123.99))]);
-        assert_eq!(tokenize("80."), vec![MalToken::new(Number(80.))]);
-        assert_eq!(tokenize("-2."), vec![MalToken::new(Number(-2.))]);
+        assert_eq!(tokenize("1"), Ok(vec![MalToken::new(Number(1.))]));
+        assert_eq!(tokenize("-1"), Ok(vec![MalToken::new(Number(-1.))]));
+        assert_eq!(tokenize("123456"), Ok(vec![MalToken::new(Number(123456.))]));
+        assert_eq!(tokenize("12.2"), Ok(vec![MalToken::new(Number(12.2))]));
+        assert_eq!(tokenize("-123.99"), Ok(vec![MalToken::new(Number(-123.99))]));
+        assert_eq!(tokenize("80."), Ok(vec![MalToken::new(Number(80.))]));
+        assert_eq!(tokenize("-2."), Ok(vec![MalToken::new(Number(-2.))]));
         assert_eq!(
             tokenize("-12 0 53.2 -5."),
-            vec![
+            Ok(vec![
                 MalToken::new(Number(-12.)),
                 MalToken::new(Number(0.)),
                 MalToken::new(Number(53.2)),
                 MalToken::new(Number(-5.)),
             ]
-        );
+        ));
     }
 
     #[test]
     fn test_tokenize_symbols() {
-        assert_eq!(tokenize("a"), vec![MalToken::new(Symbol("a".to_string()))]);
+        assert_eq!(tokenize("a"), Ok(vec![MalToken::new(Symbol("a".to_string()))]));
         assert_eq!(
             tokenize("ab_c123"),
-            vec![MalToken::new(Symbol("ab_c123".to_string()))]
-        );
-        assert_eq!(tokenize("*"), vec![MalToken::new(Symbol("*".to_string()))]);
+            Ok(vec![MalToken::new(Symbol("ab_c123".to_string()))]
+        ));
+        assert_eq!(tokenize("*"), Ok(vec![MalToken::new(Symbol("*".to_string()))]));
         assert_eq!(
             tokenize("qwer - a0b +bc"),
-            vec![
+            Ok(vec![
                 MalToken::new(Symbol("qwer".to_string())),
                 MalToken::new(Symbol("-".to_string())),
                 MalToken::new(Symbol("a0b".to_string())),
                 MalToken::new(Symbol("+bc".to_string())),
             ]
-        );
+        ));
+    }
+
+    #[test]
+    fn test_tokenize_strings() {
+        assert_eq!(tokenize(r#""""#), Ok(vec![MalToken::new(Str("".to_string()))]));
+        assert_eq!(tokenize(r#""abc""#), Ok(vec![MalToken::new(Str("abc".to_string()))]));
+        assert_eq!(tokenize(r#""abc 123  ab""#), Ok(vec![MalToken::new(Str("abc 123  ab".to_string()))]));
+        assert_eq!(tokenize(r#""quotes 'aa'""#), Ok(vec![MalToken::new(Str("quotes 'aa'".to_string()))]));
+        assert_eq!(tokenize(r#""123\nab""#), Ok(vec![MalToken::new(Str("123\nab".to_string()))]));
+        assert_eq!(tokenize(r#""ab\"cd""#), Ok(vec![MalToken::new(Str("ab\"cd".to_string()))]));
+        assert_eq!(tokenize(r#""ab\\cd""#), Ok(vec![MalToken::new(Str("ab\\cd".to_string()))]));
+
+        match tokenize(r#""abc"#) {
+            Err(MalError::Tokenizer(_)) => {}
+            _ => assert!(false, "Expected Tokenizer error."),
+        }
+
+        match tokenize(r#""abc\"#) {
+            Err(MalError::Tokenizer(_)) => {}
+            _ => assert!(false, "Expected Tokenizer error."),
+        }
     }
 }

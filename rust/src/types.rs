@@ -18,12 +18,14 @@ impl MalValue {
 pub enum MalValueType {
     Number(f64),
     Symbol(String),
+    Str(String),
     List(VecDeque<MalValue>),
 }
 
 #[derive(Debug, PartialEq)]
 pub enum MalError {
     EmptyProgram,
+    Tokenizer(String),
     Parser(String),
 }
 
@@ -31,6 +33,7 @@ impl fmt::Display for MalError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             EmptyProgram => write!(f, "Empty program."),
+            Tokenizer(message) => write!(f, "Tokenizer error: {}", message),
             Parser(message) => write!(f, "Parser error: {}", message),
         }
     }
@@ -60,5 +63,5 @@ pub enum MalTokenType {
     RBracket,
     Number(f64),
     Symbol(String),
-    //StringLiteral(String),
+    Str(String),
 }
