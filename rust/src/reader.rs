@@ -59,7 +59,8 @@ fn read_atom(reader: &mut Reader) -> MalResult {
         .ok_or_else(|| Parser("Unexpected EOF".to_string()))?
         .token_type
     {
-        MalTokenType::Number(val) => Ok(MalValue::new(Number(val.clone()))),
+        MalTokenType::Number(val) => Ok(MalValue::new(Number(val))),
+        MalTokenType::Symbol(ref val) => Ok(MalValue::new(Symbol(val.clone()))),
         _ => Err(Parser("Unexpected token".to_string())),
     }
 }
@@ -133,5 +134,12 @@ mod tests {
         assert_eq!(read_str("-12"), Ok(MalValue::new(Number(-12.))));
         assert_eq!(read_str("-5.5"), Ok(MalValue::new(Number(-5.5))));
         assert_eq!(read_str("10."), Ok(MalValue::new(Number(10.))));
+    }
+
+    #[test]
+    fn test_read_str_symbol() {
+        assert_eq!(read_str("abc"), Ok(MalValue::new(Symbol("abc".to_string()))));
+        assert_eq!(read_str("+"), Ok(MalValue::new(Symbol("+".to_string()))));
+        assert_eq!(read_str("abc_123_ABC"), Ok(MalValue::new(Symbol("abc_123_ABC".to_string()))));
     }
 }

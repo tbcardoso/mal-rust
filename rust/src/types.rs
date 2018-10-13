@@ -16,6 +16,7 @@ impl MalValue {
 #[derive(Debug, PartialEq)]
 pub enum MalValueType {
     Number(f64),
+    Symbol(String),
 }
 
 #[derive(Debug, PartialEq)]
