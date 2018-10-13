@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use tokenizer::tokenize;
 use types::MalError::*;
 use types::MalTokenType;
@@ -50,7 +51,25 @@ fn read_form(reader: &mut Reader) -> MalResult {
 }
 
 fn read_list(reader: &mut Reader) -> MalResult {
-    Err(Parser("Unimplemented".to_string()))
+    reader.next().unwrap();
+
+    let mut elems = VecDeque::new();
+
+    loop {
+        match reader
+            .peek()
+            .ok_or_else(|| Parser("Expected ')', got EOF".to_string()))?
+            .token_type
+        {
+            MalTokenType::RParen => {
+                reader.next().unwrap();
+                break;
+            }
+            _ => elems.push_back(read_form(reader)?),
+        }
+    }
+
+    Ok(MalValue::new(List(elems)))
 }
 
 fn read_atom(reader: &mut Reader) -> MalResult {
@@ -68,6 +87,7 @@ fn read_atom(reader: &mut Reader) -> MalResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use types::MalError;
     use types::MalTokenType;
     use types::MalTokenType::{LParen, RParen};
 
@@ -138,8 +158,68 @@ mod tests {
 
     #[test]
     fn test_read_str_symbol() {
-        assert_eq!(read_str("abc"), Ok(MalValue::new(Symbol("abc".to_string()))));
+        assert_eq!(
+            read_str("abc"),
+            Ok(MalValue::new(Symbol("abc".to_string())))
+        );
         assert_eq!(read_str("+"), Ok(MalValue::new(Symbol("+".to_string()))));
-        assert_eq!(read_str("abc_123_ABC"), Ok(MalValue::new(Symbol("abc_123_ABC".to_string()))));
+        assert_eq!(
+            read_str("abc_123_ABC"),
+            Ok(MalValue::new(Symbol("abc_123_ABC".to_string())))
+        );
+    }
+
+    #[test]
+    fn test_read_str_list() {
+        assert_eq!(read_str("()"), Ok(MalValue::new(List(VecDeque::new()))));
+
+        assert_eq!(
+            read_str("(h)"),
+            Ok(MalValue::new(List(
+                vec![MalValue::new(Symbol("h".to_string())),]
+                    .into_iter()
+                    .collect()
+            )))
+        );
+
+        assert_eq!(
+            read_str("(- xy 123.1)"),
+            Ok(MalValue::new(List(
+                vec![
+                    MalValue::new(Symbol("-".to_string())),
+                    MalValue::new(Symbol("xy".to_string())),
+                    MalValue::new(Number(123.1)),
+                ].into_iter()
+                .collect()
+            )))
+        );
+
+        assert_eq!(
+            read_str("(* (f (g) 1) 123)"),
+            Ok(MalValue::new(List(
+                vec![
+                    MalValue::new(Symbol("*".to_string())),
+                    MalValue::new(List(
+                        vec![
+                            MalValue::new(Symbol("f".to_string())),
+                            MalValue::new(List(
+                                vec![MalValue::new(Symbol("g".to_string())),]
+                                    .into_iter()
+                                    .collect()
+                            )),
+                            MalValue::new(Number(1.)),
+                        ].into_iter()
+                        .collect()
+                    )),
+                    MalValue::new(Number(123.)),
+                ].into_iter()
+                .collect()
+            )))
+        );
+
+        match read_str("(h 12") {
+            Err(MalError::Parser(_)) => {}
+            _ => assert!(false, "Expected Parser error."),
+        }
     }
 }

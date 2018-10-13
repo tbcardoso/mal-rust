@@ -1,3 +1,4 @@
+use std::collections::vec_deque::VecDeque;
 use std::fmt;
 use types::MalError::*;
 
@@ -17,6 +18,7 @@ impl MalValue {
 pub enum MalValueType {
     Number(f64),
     Symbol(String),
+    List(VecDeque<MalValue>),
 }
 
 #[derive(Debug, PartialEq)]
