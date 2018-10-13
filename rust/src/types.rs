@@ -1,3 +1,6 @@
+use std::fmt;
+use types::MalError::*;
+
 #[derive(Debug, PartialEq)]
 pub struct MalValue {
     pub mal_type: MalValueType,
@@ -18,6 +21,16 @@ pub enum MalValueType {
 #[derive(Debug, PartialEq)]
 pub enum MalError {
     EmptyProgram,
+    Parser(String),
+}
+
+impl fmt::Display for MalError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            EmptyProgram => write!(f, "Empty program."),
+            Parser(message) => write!(f, "Parser error: {}", message),
+        }
+    }
 }
 
 pub type MalResult = Result<MalValue, MalError>;

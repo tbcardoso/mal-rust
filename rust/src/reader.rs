@@ -39,24 +39,28 @@ pub fn read_str(program: &str) -> MalResult {
 }
 
 fn read_form(reader: &mut Reader) -> MalResult {
-    match reader.peek() {
-        Some(MalToken { token_type: LParen }) => read_list(reader),
+    match reader
+        .peek()
+        .ok_or_else(|| Parser("Unexpected EOF".to_string()))?
+        .token_type
+    {
+        LParen => read_list(reader),
         _ => read_atom(reader),
     }
-
-    //    Err(EmptyProgram)
 }
 
 fn read_list(reader: &mut Reader) -> MalResult {
-    Err(EmptyProgram)
+    Err(Parser("Unimplemented".to_string()))
 }
 
 fn read_atom(reader: &mut Reader) -> MalResult {
-    match reader.next() {
-        Some(MalToken {
-            token_type: MalTokenType::Number(val),
-        }) => Ok(MalValue::new(Number(val.clone()))),
-        _ => Err(EmptyProgram),
+    match reader
+        .next()
+        .ok_or_else(|| Parser("Unexpected EOF".to_string()))?
+        .token_type
+    {
+        MalTokenType::Number(val) => Ok(MalValue::new(Number(val.clone()))),
+        _ => Err(Parser("Unexpected token".to_string())),
     }
 }
 

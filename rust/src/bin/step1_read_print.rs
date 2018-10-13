@@ -1,11 +1,11 @@
 extern crate malrs;
 
-use malrs::readline::Readline;
-use malrs::types::MalResult;
-use malrs::types::MalError;
-use malrs::types::MalValue;
 use malrs::printer::pr_str;
 use malrs::reader::read_str;
+use malrs::readline::Readline;
+use malrs::types::MalError;
+use malrs::types::MalResult;
+use malrs::types::MalValue;
 
 fn main() {
     let mut readline = Readline::new();
@@ -17,10 +17,9 @@ fn main() {
                 if !line.is_empty() {
                     match rep(&line) {
                         Ok(result) => println!("{}", result),
-                        Err(_) => {},
+                        Err(MalError::EmptyProgram) => {}
+                        Err(mal_error) => println!("Error! {}", mal_error),
                     }
-
-
                 }
             }
         }
