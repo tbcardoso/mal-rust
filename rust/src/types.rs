@@ -28,6 +28,7 @@ pub enum MalError {
     EmptyProgram,
     Tokenizer(String),
     Parser(String),
+    UndefinedSymbol(String),
 }
 
 impl fmt::Display for MalError {
@@ -36,6 +37,7 @@ impl fmt::Display for MalError {
             EmptyProgram => write!(f, "Empty program."),
             Tokenizer(message) => write!(f, "Tokenizer error: {}", message),
             Parser(message) => write!(f, "Parser error: {}", message),
+            UndefinedSymbol(symbol) => write!(f, "Undefined symbol: {}", symbol),
         }
     }
 }
