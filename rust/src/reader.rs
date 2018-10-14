@@ -36,7 +36,13 @@ pub fn read_str(program: &str) -> MalResult {
 
     let mut reader = Reader::new(tokens);
 
-    read_form(&mut reader)
+    let mal_value = read_form(&mut reader)?;
+
+    if let Some(_) = reader.peek() {
+        return Err(Parser("Expected EOF, found token".to_string()));
+    }
+
+    Ok(mal_value)
 }
 
 fn read_form(reader: &mut Reader) -> MalResult {
@@ -237,6 +243,19 @@ mod tests {
         );
 
         match read_str("(h 12") {
+            Err(MalError::Parser(_)) => {}
+            _ => assert!(false, "Expected Parser error."),
+        }
+    }
+
+    #[test]
+    fn test_read_str_extra_tokens() {
+        match read_str("aa 123") {
+            Err(MalError::Parser(_)) => {}
+            _ => assert!(false, "Expected Parser error."),
+        }
+
+        match read_str("(+ 1 x) (- 123 y)") {
             Err(MalError::Parser(_)) => {}
             _ => assert!(false, "Expected Parser error."),
         }
