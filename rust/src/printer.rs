@@ -3,7 +3,7 @@ use types::MalValue;
 use types::MalValueType::*;
 
 pub fn pr_str(mal_value: &MalValue) -> String {
-    match mal_value.mal_type {
+    match *mal_value.mal_type {
         Number(val) => val.to_string(),
         Symbol(ref val) => val.clone(),
         Str(ref val) => escape_string(&val),

@@ -1,16 +1,17 @@
 use std::collections::vec_deque::VecDeque;
 use std::fmt;
 use types::MalError::*;
+use std::rc::Rc;
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct MalValue {
-    pub mal_type: MalValueType,
+    pub mal_type: Rc<MalValueType>,
     // Possible extra fields: line, column
 }
 
 impl MalValue {
     pub fn new(mal_type: MalValueType) -> MalValue {
-        MalValue { mal_type }
+        MalValue { mal_type: Rc::new(mal_type) }
     }
 }
 
