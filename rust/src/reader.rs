@@ -178,10 +178,7 @@ mod tests {
 
     #[test]
     fn test_read_str_string() {
-        assert_eq!(
-            read_str(r#""""#),
-            Ok(MalValue::new(Str("".to_string())))
-        );
+        assert_eq!(read_str(r#""""#), Ok(MalValue::new(Str("".to_string()))));
 
         assert_eq!(
             read_str(r#""abc""#),

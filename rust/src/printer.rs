@@ -11,7 +11,7 @@ pub fn pr_str(mal_value: &MalValue) -> String {
     }
 }
 
-fn escape_string(text :&str) -> String {
+fn escape_string(text: &str) -> String {
     let mut escaped_str = String::new();
     let mut chars = text.chars();
 
@@ -59,11 +59,26 @@ mod tests {
     fn test_pr_str_str() {
         assert_eq!(pr_str(&MalValue::new(Str("".to_string()))), r#""""#);
         assert_eq!(pr_str(&MalValue::new(Str("abc".to_string()))), r#""abc""#);
-        assert_eq!(pr_str(&MalValue::new(Str("ab 12 ABC".to_string()))), r#""ab 12 ABC""#);
-        assert_eq!(pr_str(&MalValue::new(Str("say 'something'".to_string()))), r#""say 'something'""#);
-        assert_eq!(pr_str(&MalValue::new(Str("123\nabc".to_string()))), r#""123\nabc""#);
-        assert_eq!(pr_str(&MalValue::new(Str("123\"abc".to_string()))), r#""123\"abc""#);
-        assert_eq!(pr_str(&MalValue::new(Str("123\\abc".to_string()))), r#""123\\abc""#);
+        assert_eq!(
+            pr_str(&MalValue::new(Str("ab 12 ABC".to_string()))),
+            r#""ab 12 ABC""#
+        );
+        assert_eq!(
+            pr_str(&MalValue::new(Str("say 'something'".to_string()))),
+            r#""say 'something'""#
+        );
+        assert_eq!(
+            pr_str(&MalValue::new(Str("123\nabc".to_string()))),
+            r#""123\nabc""#
+        );
+        assert_eq!(
+            pr_str(&MalValue::new(Str("123\"abc".to_string()))),
+            r#""123\"abc""#
+        );
+        assert_eq!(
+            pr_str(&MalValue::new(Str("123\\abc".to_string()))),
+            r#""123\\abc""#
+        );
     }
 
     #[test]
