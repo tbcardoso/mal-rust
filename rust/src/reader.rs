@@ -6,6 +6,7 @@ use types::MalTokenType::LParen;
 use types::MalValueType::*;
 use types::{MalResult, MalToken, MalValue};
 
+#[derive(Debug)]
 struct Reader {
     tokens: Vec<MalToken>,
     cur_pos: usize,
