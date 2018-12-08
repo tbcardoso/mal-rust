@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use types::{MalValue, MalResult, MalError};
+use types::{MalError, MalResult, MalValue};
 
 #[derive(Debug)]
 struct Env {
@@ -18,7 +18,8 @@ impl Env {
     }
 
     fn get(&self, symbol_key: &str) -> MalResult {
-        self.data.get(symbol_key)
+        self.data
+            .get(symbol_key)
             .map(|val| val.clone())
             .ok_or_else(|| MalError::UndefinedSymbol(symbol_key.to_string()))
     }

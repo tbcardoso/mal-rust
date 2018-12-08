@@ -90,7 +90,8 @@ mod tests {
                     MalValue::new(Symbol("+".to_string())),
                     MalValue::new(Number(456.)),
                     MalValue::new(Symbol("y".to_string())),
-                ].into_iter()
+                ]
+                .into_iter()
                 .collect()
             ))),
             "(+ 456 y)"

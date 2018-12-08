@@ -212,7 +212,8 @@ mod tests {
                     MalValue::new(Symbol("-".to_string())),
                     MalValue::new(Symbol("xy".to_string())),
                     MalValue::new(Number(123.1)),
-                ].into_iter()
+                ]
+                .into_iter()
                 .collect()
             )))
         );
@@ -231,11 +232,13 @@ mod tests {
                                     .collect()
                             )),
                             MalValue::new(Number(1.)),
-                        ].into_iter()
+                        ]
+                        .into_iter()
                         .collect()
                     )),
                     MalValue::new(Number(123.)),
-                ].into_iter()
+                ]
+                .into_iter()
                 .collect()
             )))
         );
