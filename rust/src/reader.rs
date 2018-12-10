@@ -1,10 +1,10 @@
 use std::collections::VecDeque;
-use tokenizer::tokenize;
-use types::MalError::*;
-use types::MalTokenType;
-use types::MalTokenType::LParen;
-use types::MalValueType::*;
-use types::{MalResult, MalToken, MalValue};
+use crate::tokenizer::tokenize;
+use crate::types::MalError::*;
+use crate::types::MalTokenType;
+use crate::types::MalTokenType::LParen;
+use crate::types::MalValueType::*;
+use crate::types::{MalResult, MalToken, MalValue};
 
 #[derive(Debug)]
 struct Reader {
@@ -95,9 +95,9 @@ fn read_atom(reader: &mut Reader) -> MalResult {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use types::MalError;
-    use types::MalTokenType;
-    use types::MalTokenType::{LParen, RParen};
+    use crate::types::MalError;
+    use crate::types::MalTokenType;
+    use crate::types::MalTokenType::{LParen, RParen};
 
     #[test]
     fn test_reader() {

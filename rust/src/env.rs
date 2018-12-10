@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use types::{MalError, MalResult, MalValue};
+use crate::types::{MalError, MalResult, MalValue};
 
 #[derive(Debug)]
 struct Env {
@@ -28,8 +28,7 @@ impl Env {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use env::Env;
-    use types::MalValueType::Str;
+    use crate::types::MalValueType::Str;
 
     #[test]
     fn test_get_from_empty_env() {

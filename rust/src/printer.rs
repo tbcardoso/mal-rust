@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
-use types::MalValue;
-use types::MalValueType::*;
+use crate::types::MalValue;
+use crate::types::MalValueType::*;
 
 pub fn pr_str(mal_value: &MalValue) -> String {
     match *mal_value.mal_type {

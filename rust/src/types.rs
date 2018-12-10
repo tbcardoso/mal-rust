@@ -1,7 +1,7 @@
 use std::collections::vec_deque::VecDeque;
 use std::fmt;
 use std::rc::Rc;
-use types::MalError::*;
+use crate::types::MalError::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct MalValue {
