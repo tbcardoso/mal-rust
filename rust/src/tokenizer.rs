@@ -1,9 +1,9 @@
-use regex::Regex;
-use lazy_static::lazy_static;
 use crate::types::MalError;
 use crate::types::MalToken;
 use crate::types::MalTokenType;
 use crate::types::MalTokenType::*;
+use lazy_static::lazy_static;
+use regex::Regex;
 
 pub fn tokenize(program: &str) -> Result<Vec<MalToken>, MalError> {
     const TOKEN_RE_STR: &str =

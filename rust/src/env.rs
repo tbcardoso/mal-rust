@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use crate::types::{MalError, MalResult, MalValue};
+use std::collections::HashMap;
 
 #[derive(Debug)]
 struct Env {

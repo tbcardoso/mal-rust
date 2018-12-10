@@ -1,6 +1,6 @@
-use std::collections::VecDeque;
 use crate::types::MalValue;
 use crate::types::MalValueType::*;
+use std::collections::VecDeque;
 
 pub fn pr_str(mal_value: &MalValue) -> String {
     match *mal_value.mal_type {
@@ -8,6 +8,7 @@ pub fn pr_str(mal_value: &MalValue) -> String {
         Symbol(ref val) => val.clone(),
         Str(ref val) => escape_string(&val),
         List(ref list) => pr_list(list),
+        RustFunc(_) => "#".to_string(),
     }
 }
 
@@ -37,6 +38,7 @@ fn pr_list(list: &VecDeque<MalValue>) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::types::RustFunction;
 
     #[test]
     fn test_pr_str_number() {
@@ -95,6 +97,16 @@ mod tests {
                 .collect()
             ))),
             "(+ 456 y)"
+        );
+    }
+
+    #[test]
+    fn test_pr_str_rustfunc() {
+        assert_eq!(
+            pr_str(&MalValue::new(RustFunc(RustFunction(|_| Ok(
+                MalValue::new(Number(0.))
+            ))))),
+            "#"
         );
     }
 }

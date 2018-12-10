@@ -1,7 +1,7 @@
+use crate::types::MalError::*;
 use std::collections::vec_deque::VecDeque;
 use std::fmt;
 use std::rc::Rc;
-use crate::types::MalError::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct MalValue {
@@ -23,6 +23,23 @@ pub enum MalValueType {
     Symbol(String),
     Str(String),
     List(VecDeque<MalValue>),
+    RustFunc(RustFunction),
+}
+
+pub struct RustFunction(pub fn(&Vec<MalValue>) -> MalResult);
+
+impl fmt::Debug for RustFunction {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_tuple("RustFunction")
+            .field(&(self.0 as usize))
+            .finish()
+    }
+}
+
+impl PartialEq for RustFunction {
+    fn eq(&self, other: &RustFunction) -> bool {
+        self.0 as usize == other.0 as usize
+    }
 }
 
 #[derive(Debug, PartialEq)]

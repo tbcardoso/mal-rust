@@ -1,10 +1,10 @@
-use std::collections::VecDeque;
 use crate::tokenizer::tokenize;
 use crate::types::MalError::*;
 use crate::types::MalTokenType;
 use crate::types::MalTokenType::LParen;
 use crate::types::MalValueType::*;
 use crate::types::{MalResult, MalToken, MalValue};
+use std::collections::VecDeque;
 
 #[derive(Debug)]
 struct Reader {
