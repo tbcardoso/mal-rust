@@ -25,7 +25,7 @@ pub enum MalValueType {
     RustFunc(RustFunction),
 }
 
-pub struct RustFunction(pub fn(&Vec<MalValue>) -> MalResult);
+pub struct RustFunction(pub fn(&[MalValue]) -> MalResult);
 
 impl fmt::Debug for RustFunction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -47,6 +47,8 @@ pub enum MalError {
     Tokenizer(String),
     Parser(String),
     UndefinedSymbol(String),
+    Evaluation(String),
+    RustFunction(String),
 }
 
 impl fmt::Display for MalError {
@@ -56,6 +58,10 @@ impl fmt::Display for MalError {
             Tokenizer(message) => write!(f, "Tokenizer error: {}", message),
             Parser(message) => write!(f, "Parser error: {}", message),
             UndefinedSymbol(symbol) => write!(f, "Undefined symbol: {}", symbol),
+            Evaluation(message) => write!(f, "Error in evaluation: {}", message),
+            MalError::RustFunction(message) => {
+                write!(f, "Error when calling rust function: {}", message)
+            }
         }
     }
 }
