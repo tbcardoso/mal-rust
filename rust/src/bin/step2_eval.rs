@@ -1,5 +1,3 @@
-extern crate malrs;
-
 use malrs::printer::pr_str;
 use malrs::reader::read_str;
 use malrs::readline::Readline;
@@ -7,6 +5,8 @@ use malrs::types::{MalError, MalResult, MalValue};
 
 fn main() {
     let mut readline = Readline::new();
+
+//    let mut env = Env::new();
 
     loop {
         match readline.readline() {

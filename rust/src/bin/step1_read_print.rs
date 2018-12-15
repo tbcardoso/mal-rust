@@ -1,5 +1,3 @@
-extern crate malrs;
-
 use malrs::printer::pr_str;
 use malrs::reader::read_str;
 use malrs::readline::Readline;

@@ -1,5 +1,3 @@
-extern crate malrs;
-
 use malrs::readline::Readline;
 
 fn main() {
