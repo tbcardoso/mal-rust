@@ -1,6 +1,5 @@
 use crate::types::MalValue;
 use crate::types::MalValueType::*;
-use std::collections::VecDeque;
 
 pub fn pr_str(mal_value: &MalValue) -> String {
     match *mal_value.mal_type {
@@ -29,7 +28,7 @@ fn escape_string(text: &str) -> String {
     format!("\"{}\"", escaped_str)
 }
 
-fn pr_list(list: &VecDeque<MalValue>) -> String {
+fn pr_list(list: &Vec<MalValue>) -> String {
     let elements: Vec<String> = list.iter().map(|val| pr_str(val)).collect();
 
     format!("({})", elements.join(" "))
@@ -85,7 +84,7 @@ mod tests {
 
     #[test]
     fn test_pr_str_list() {
-        assert_eq!(pr_str(&MalValue::new(List(VecDeque::new()))), "()");
+        assert_eq!(pr_str(&MalValue::new(List(Vec::new()))), "()");
         assert_eq!(
             pr_str(&MalValue::new(List(
                 vec![

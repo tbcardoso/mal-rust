@@ -4,7 +4,6 @@ use crate::types::MalTokenType;
 use crate::types::MalTokenType::LParen;
 use crate::types::MalValueType::*;
 use crate::types::{MalResult, MalToken, MalValue};
-use std::collections::VecDeque;
 
 #[derive(Debug)]
 struct Reader {
@@ -60,7 +59,7 @@ fn read_form(reader: &mut Reader) -> MalResult {
 fn read_list(reader: &mut Reader) -> MalResult {
     reader.next().unwrap();
 
-    let mut elems = VecDeque::new();
+    let mut elems = Vec::new();
 
     loop {
         match reader
@@ -72,7 +71,7 @@ fn read_list(reader: &mut Reader) -> MalResult {
                 reader.next().unwrap();
                 break;
             }
-            _ => elems.push_back(read_form(reader)?),
+            _ => elems.push(read_form(reader)?),
         }
     }
 
@@ -194,7 +193,7 @@ mod tests {
 
     #[test]
     fn test_read_str_list() {
-        assert_eq!(read_str("()"), Ok(MalValue::new(List(VecDeque::new()))));
+        assert_eq!(read_str("()"), Ok(MalValue::new(List(Vec::new()))));
 
         assert_eq!(
             read_str("(h)"),

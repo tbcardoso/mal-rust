@@ -1,5 +1,4 @@
 use crate::types::MalError::*;
-use std::collections::vec_deque::VecDeque;
 use std::fmt;
 use std::rc::Rc;
 
@@ -22,7 +21,7 @@ pub enum MalValueType {
     Number(f64),
     Symbol(String),
     Str(String),
-    List(VecDeque<MalValue>),
+    List(Vec<MalValue>),
     RustFunc(RustFunction),
 }
 
