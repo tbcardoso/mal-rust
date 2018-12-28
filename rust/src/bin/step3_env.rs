@@ -118,9 +118,9 @@ fn apply_ast(ast: &MalValue, env: &mut Env) -> MalResult {
                 .get(0)
                 .expect("Evaluation of non-empty list resulted in empty list.")
                 .mal_type
-                {
-                    rust_function.0(&evaluated_list[1..])
-                } else {
+            {
+                rust_function.0(&evaluated_list[1..])
+            } else {
                 Err(MalError::Evaluation(
                     "First element of a list must evaluate to a function.".to_string(),
                 ))
@@ -154,21 +154,18 @@ mod tests {
     #[test]
     fn test_empty_program() {
         let mut env = create_env();
-
         assert_eq!(rep("", &mut env), Err(EmptyProgram));
     }
 
     #[test]
     fn test_empty_list() {
         let mut env = create_env();
-
         assert_eq!(rep("()", &mut env), Ok("()".to_string()));
     }
 
     #[test]
     fn test_nested_arithmetic() {
         let mut env = create_env();
-
         assert_eq!(rep("(+ 2 (* 3 4))", &mut env), Ok("14".to_string()));
     }
 }
