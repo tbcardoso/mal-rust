@@ -6,7 +6,7 @@ use malrs::types::MalValueType::{List, Number, RustFunc, Symbol};
 use malrs::types::{MalError, MalResult, MalValue, RustFunction};
 
 fn main() {
-    let env = create_env();
+    let mut env = create_env();
     let mut readline = Readline::new();
 
     loop {
@@ -14,7 +14,7 @@ fn main() {
             None => break,
             Some(line) => {
                 if !line.is_empty() {
-                    match rep(&line, &env) {
+                    match rep(&line, &mut env) {
                         Ok(result) => println!("{}", result),
                         Err(MalError::EmptyProgram) => {}
                         Err(mal_error) => println!("Error! {}", mal_error),
@@ -88,9 +88,9 @@ fn eval_arithmetic_operation(args: &[MalValue], op: fn(f64, f64) -> f64) -> MalR
     Ok(MalValue::new(Number(op(arg1, arg2))))
 }
 
-fn rep(s: &str, env: &Env) -> Result<String, MalError> {
+fn rep(s: &str, env: &mut Env) -> Result<String, MalError> {
     let read_val = read(s)?;
-    let eval_val = eval(&read_val, &env)?;
+    let eval_val = eval(&read_val, env)?;
     Ok(print(&eval_val))
 }
 
@@ -98,34 +98,10 @@ fn read(s: &str) -> MalResult {
     read_str(s)
 }
 
-fn eval(ast: &MalValue, env: &Env) -> MalResult {
+fn eval(ast: &MalValue, env: &mut Env) -> MalResult {
     match *ast.mal_type {
-        List(ref list) => {
-            if list.is_empty() {
-                Ok(ast.clone())
-            } else {
-                let evaluated_list_ast = eval_ast(ast, env)?;
-                match *evaluated_list_ast.mal_type {
-                    List(ref evaluated_list) => {
-                        if let RustFunc(ref rust_function) = *evaluated_list
-                            .get(0)
-                            .expect("Evaluation of non-empty list resulted in empty list.")
-                            .mal_type
-                        {
-                            rust_function.0(&evaluated_list[1..])
-                        } else {
-                            Err(MalError::Evaluation(
-                                "First element of a list must evaluate to a function.".to_string(),
-                            ))
-                        }
-                    }
-                    _ => panic!(
-                        "Evaluation of list resulted in non-list: {:?}",
-                        evaluated_list_ast
-                    ),
-                }
-            }
-        }
+        List(ref list) if list.is_empty() => Ok(ast.clone()),
+        List(_) => apply_ast(ast, env),
         _ => eval_ast(ast, env),
     }
 }
@@ -134,7 +110,30 @@ fn print(mal_val: &MalValue) -> String {
     pr_str(mal_val)
 }
 
-fn eval_ast(ast: &MalValue, env: &Env) -> MalResult {
+fn apply_ast(ast: &MalValue, env: &mut Env) -> MalResult {
+    let evaluated_list_ast = eval_ast(ast, env)?;
+    match *evaluated_list_ast.mal_type {
+        List(ref evaluated_list) => {
+            if let RustFunc(ref rust_function) = *evaluated_list
+                .get(0)
+                .expect("Evaluation of non-empty list resulted in empty list.")
+                .mal_type
+                {
+                    rust_function.0(&evaluated_list[1..])
+                } else {
+                Err(MalError::Evaluation(
+                    "First element of a list must evaluate to a function.".to_string(),
+                ))
+            }
+        }
+        _ => panic!(
+            "Evaluation of list resulted in non-list: {:?}",
+            evaluated_list_ast
+        ),
+    }
+}
+
+fn eval_ast(ast: &MalValue, env: &mut Env) -> MalResult {
     match *ast.mal_type {
         Symbol(ref s) => env.get(&s),
         List(ref list) => {
