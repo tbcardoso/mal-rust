@@ -146,3 +146,30 @@ fn eval_ast(ast: &MalValue, env: &Env) -> MalResult {
         _ => Ok(ast.clone()),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use malrs::types::MalError::*;
+
+    #[test]
+    fn test_empty_program() {
+        let mut env = create_env();
+
+        assert_eq!(rep("", &mut env), Err(EmptyProgram));
+    }
+
+    #[test]
+    fn test_empty_list() {
+        let mut env = create_env();
+
+        assert_eq!(rep("()", &mut env), Ok("()".to_string()));
+    }
+
+    #[test]
+    fn test_nested_arithmetic() {
+        let mut env = create_env();
+
+        assert_eq!(rep("(+ 2 (* 3 4))", &mut env), Ok("14".to_string()));
+    }
+}
