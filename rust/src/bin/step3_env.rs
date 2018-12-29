@@ -278,6 +278,9 @@ mod tests {
     #[test]
     fn test_special_form_let_multiple_bindings() {
         let mut env = create_root_env();
-        assert_eq!(rep("(let* (a 2 b (+ a a) c (- b a)) (+ (* a b) c))", &mut env), Ok("10".to_string()));
+        assert_eq!(
+            rep("(let* (a 2 b (+ a a) c (- b a)) (+ (* a b) c))", &mut env),
+            Ok("10".to_string())
+        );
     }
 }

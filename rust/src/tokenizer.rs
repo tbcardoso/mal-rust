@@ -71,7 +71,6 @@ fn unescape_char(c: char) -> char {
 }
 
 fn scan_nonspecial_token(text: &str) -> Result<MalTokenType, MalError> {
-
     let reserved_name = match text {
         "nil" => Some(Nil),
         "true" => Some(True),
