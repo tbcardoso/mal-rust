@@ -2,7 +2,7 @@ use malrs::env::Env;
 use malrs::printer::pr_str;
 use malrs::reader::read_str;
 use malrs::readline::Readline;
-use malrs::types::MalValueType::{List, Number, RustFunc, Symbol};
+use malrs::types::MalValueType::{List, Number, RustFunc, Symbol, Vector};
 use malrs::types::{MalError, MalResult, MalValue, RustFunction};
 
 fn main() {
@@ -137,12 +137,12 @@ fn print(mal_val: &MalValue) -> String {
 fn eval_ast(ast: &MalValue, env: &Env) -> MalResult {
     match *ast.mal_type {
         Symbol(ref s) => env.get(&s),
-        List(ref list) => {
-            let evaluated_list: Result<_, _> =
-                list.iter().map(|mal_val| eval(mal_val, env)).collect();
-
-            Ok(MalValue::new(List(evaluated_list?)))
-        }
+        List(ref list) => Ok(MalValue::new(List(eval_ast_seq(list, env)?))),
+        Vector(ref vec) => Ok(MalValue::new(Vector(eval_ast_seq(vec, env)?))),
         _ => Ok(ast.clone()),
     }
+}
+
+fn eval_ast_seq(seq: &[MalValue], env: &Env) -> Result<Vec<MalValue>, MalError> {
+    seq.iter().map(|mal_val| eval(mal_val, env)).collect()
 }

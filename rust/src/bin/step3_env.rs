@@ -2,7 +2,7 @@ use malrs::env::Env;
 use malrs::printer::pr_str;
 use malrs::reader::read_str;
 use malrs::readline::Readline;
-use malrs::types::MalValueType::{List, Number, RustFunc, Symbol};
+use malrs::types::MalValueType::{List, Number, RustFunc, Symbol, Vector};
 use malrs::types::{MalError, MalResult, MalValue, RustFunction};
 
 fn main() {
@@ -121,14 +121,14 @@ fn print(mal_val: &MalValue) -> String {
 fn eval_ast(ast: &MalValue, env: &mut Env) -> MalResult {
     match *ast.mal_type {
         Symbol(ref s) => env.get(&s),
-        List(ref list) => {
-            let evaluated_list: Result<_, _> =
-                list.iter().map(|mal_val| eval(mal_val, env)).collect();
-
-            Ok(MalValue::new(List(evaluated_list?)))
-        }
+        List(ref list) => Ok(MalValue::new(List(eval_ast_seq(list, env)?))),
+        Vector(ref vec) => Ok(MalValue::new(Vector(eval_ast_seq(vec, env)?))),
         _ => Ok(ast.clone()),
     }
+}
+
+fn eval_ast_seq(seq: &[MalValue], env: &mut Env) -> Result<Vec<MalValue>, MalError> {
+    seq.iter().map(|mal_val| eval(mal_val, env)).collect()
 }
 
 fn apply_ast(ast: &MalValue, env: &mut Env) -> MalResult {
@@ -185,12 +185,12 @@ fn apply_special_form_let(args: &[MalValue], env: &Env) -> MalResult {
         )));
     }
 
-    let bindings = if let List(ref bindings) = *args[0].mal_type {
-        Ok(bindings.as_slice())
-    } else {
-        Err(MalError::SpecialForm(
-            "let* first argument must be a list".to_string(),
-        ))
+    let bindings = match *args[0].mal_type {
+        List(ref bindings) => Ok(bindings.as_slice()),
+        Vector(ref bindings) => Ok(bindings.as_slice()),
+        _ => Err(MalError::SpecialForm(
+            "let* first argument must be a list or a vector".to_string(),
+        )),
     }?;
 
     if bindings.len() % 2 != 0 {
@@ -238,9 +238,21 @@ mod tests {
     }
 
     #[test]
+    fn test_empty_vector() {
+        let mut env = create_root_env();
+        assert_eq!(rep("[]", &mut env), Ok("[]".to_string()));
+    }
+
+    #[test]
     fn test_nested_arithmetic() {
         let mut env = create_root_env();
         assert_eq!(rep("(+ 2 (* 3 4))", &mut env), Ok("14".to_string()));
+    }
+
+    #[test]
+    fn test_vector_eval() {
+        let mut env = create_root_env();
+        assert_eq!(rep("[1 2 (+ 1 2)]", &mut env), Ok("[1 2 3]".to_string()));
     }
 
     #[test]
@@ -281,6 +293,15 @@ mod tests {
         assert_eq!(
             rep("(let* (a 2 b (+ a a) c (- b a)) (+ (* a b) c))", &mut env),
             Ok("10".to_string())
+        );
+    }
+
+    #[test]
+    fn test_special_form_let_vector_bindings() {
+        let mut env = create_root_env();
+        assert_eq!(
+            rep("(let* [a 2 b (+ a 1)] [a b (+ a b)])", &mut env),
+            Ok("[2 3 5]".to_string())
         );
     }
 }
