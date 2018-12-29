@@ -49,6 +49,7 @@ pub enum MalError {
     UndefinedSymbol(String),
     Evaluation(String),
     RustFunction(String),
+    SpecialForm(String),
 }
 
 impl fmt::Display for MalError {
@@ -61,6 +62,9 @@ impl fmt::Display for MalError {
             Evaluation(message) => write!(f, "Error in evaluation: {}", message),
             MalError::RustFunction(message) => {
                 write!(f, "Error when calling rust function: {}", message)
+            }
+            MalError::SpecialForm(message) => {
+                write!(f, "Error when evaluating special form: {}", message)
             }
         }
     }

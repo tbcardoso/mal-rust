@@ -101,13 +101,33 @@ fn read(s: &str) -> MalResult {
 fn eval(ast: &MalValue, env: &mut Env) -> MalResult {
     match *ast.mal_type {
         List(ref list) if list.is_empty() => Ok(ast.clone()),
-        List(_) => apply_ast(ast, env),
+        List(ref list) => {
+            let first_arg = &list[0];
+
+            match *first_arg.mal_type {
+                Symbol(ref name) if name == "def!" => apply_special_form_def(&list[1..], env),
+                _ => apply_ast(ast, env),
+            }
+        }
         _ => eval_ast(ast, env),
     }
 }
 
 fn print(mal_val: &MalValue) -> String {
     pr_str(mal_val)
+}
+
+fn eval_ast(ast: &MalValue, env: &mut Env) -> MalResult {
+    match *ast.mal_type {
+        Symbol(ref s) => env.get(&s),
+        List(ref list) => {
+            let evaluated_list: Result<_, _> =
+                list.iter().map(|mal_val| eval(mal_val, env)).collect();
+
+            Ok(MalValue::new(List(evaluated_list?)))
+        }
+        _ => Ok(ast.clone()),
+    }
 }
 
 fn apply_ast(ast: &MalValue, env: &mut Env) -> MalResult {
@@ -133,17 +153,27 @@ fn apply_ast(ast: &MalValue, env: &mut Env) -> MalResult {
     }
 }
 
-fn eval_ast(ast: &MalValue, env: &mut Env) -> MalResult {
-    match *ast.mal_type {
-        Symbol(ref s) => env.get(&s),
-        List(ref list) => {
-            let evaluated_list: Result<_, _> =
-                list.iter().map(|mal_val| eval(mal_val, env)).collect();
-
-            Ok(MalValue::new(List(evaluated_list?)))
-        }
-        _ => Ok(ast.clone()),
+fn apply_special_form_def(args: &[MalValue], env: &mut Env) -> MalResult {
+    if args.len() != 2 {
+        return Err(MalError::SpecialForm(format!(
+            "def! expected 2 arguments, got {}",
+            args.len()
+        )));
     }
+
+    let arg1 = if let Symbol(ref symbol) = *args[0].mal_type {
+        Ok(symbol)
+    } else {
+        Err(MalError::SpecialForm(
+            "First argument must be a valid symbol name".to_string(),
+        ))
+    }?;
+
+    let arg2 = eval(&args[1], env)?;
+
+    env.set(arg1.as_str(), arg2.clone());
+
+    Ok(arg2)
 }
 
 #[cfg(test)]
@@ -167,5 +197,31 @@ mod tests {
     fn test_nested_arithmetic() {
         let mut env = create_env();
         assert_eq!(rep("(+ 2 (* 3 4))", &mut env), Ok("14".to_string()));
+    }
+
+    #[test]
+    fn test_special_form_def() {
+        let mut env = create_env();
+        assert_eq!(
+            rep("(def! str1 \"abc\")", &mut env),
+            Ok("\"abc\"".to_string())
+        );
+        assert_eq!(rep("str1", &mut env), Ok("\"abc\"".to_string()));
+    }
+
+    #[test]
+    fn test_special_form_def_evaluates_2nd_par() {
+        let mut env = create_env();
+        assert_eq!(rep("(def! x (- 5 3))", &mut env), Ok("2".to_string()));
+        assert_eq!(rep("x", &mut env), Ok("2".to_string()));
+    }
+
+    #[test]
+    fn test_special_form_def_symbol_to_symbol() {
+        let mut env = create_env();
+        assert_eq!(rep("(def! x 1)", &mut env), Ok("1".to_string()));
+        assert_eq!(rep("(def! y x)", &mut env), Ok("1".to_string()));
+        assert_eq!(rep("x", &mut env), Ok("1".to_string()));
+        assert_eq!(rep("y", &mut env), Ok("1".to_string()));
     }
 }
