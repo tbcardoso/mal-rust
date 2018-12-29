@@ -41,5 +41,5 @@ fn eval(mal_val: &MalValue) -> Result<&MalValue, MalError> {
 }
 
 fn print(mal_val: &MalValue) -> String {
-    pr_str(mal_val)
+    pr_str(mal_val, true)
 }

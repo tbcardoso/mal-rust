@@ -115,7 +115,7 @@ fn eval(ast: &MalValue, env: &mut Env) -> MalResult {
 }
 
 fn print(mal_val: &MalValue) -> String {
-    pr_str(mal_val)
+    pr_str(mal_val, true)
 }
 
 fn eval_ast(ast: &MalValue, env: &mut Env) -> MalResult {
