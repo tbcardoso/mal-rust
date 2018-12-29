@@ -104,6 +104,7 @@ fn read_atom(reader: &mut Reader) -> MalResult {
         MalTokenType::Number(val) => Ok(MalValue::new(Number(val))),
         MalTokenType::Symbol(ref val) => Ok(MalValue::new(Symbol(val.clone()))),
         MalTokenType::Str(ref val) => Ok(MalValue::new(Str(val.clone()))),
+        MalTokenType::Keyword(ref val) => Ok(MalValue::new(Keyword(val.clone()))),
         _ => Err(Parser("Unexpected token".to_string())),
     }
 }
@@ -220,6 +221,19 @@ mod tests {
         assert_eq!(
             read_str(r#""abc\n123""#),
             Ok(MalValue::new(Str("abc\n123".to_string())))
+        );
+    }
+
+    #[test]
+    fn test_read_str_keyword() {
+        assert_eq!(
+            read_str(":abc"),
+            Ok(MalValue::new(Keyword("abc".to_string())))
+        );
+        assert_eq!(read_str(":+"), Ok(MalValue::new(Keyword("+".to_string()))));
+        assert_eq!(
+            read_str(":abc_123_ABC"),
+            Ok(MalValue::new(Keyword("abc_123_ABC".to_string())))
         );
     }
 

@@ -24,6 +24,7 @@ pub enum MalValueType {
     Number(f64),
     Symbol(String),
     Str(String),
+    Keyword(String),
     List(Vec<MalValue>),
     Vector(Vec<MalValue>),
     RustFunc(RustFunction),
@@ -102,4 +103,5 @@ pub enum MalTokenType {
     Number(f64),
     Symbol(String),
     Str(String),
+    Keyword(String),
 }

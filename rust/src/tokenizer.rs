@@ -37,6 +37,7 @@ fn scan_token(text: &str) -> Result<Option<MalTokenType>, MalError> {
         '[' => Ok(Some(LBracket)),
         ';' => Ok(None),
         '"' => Ok(Some(Str(scan_string(text)?))),
+        ':' => Ok(Some(scan_keyword(text))),
         _ => Ok(Some(scan_nonspecial_token(text)?)),
     }
 }
@@ -68,6 +69,10 @@ fn unescape_char(c: char) -> char {
         'n' => '\n',
         other => other,
     }
+}
+
+fn scan_keyword(text: &str) -> MalTokenType {
+    Keyword(text[1..].to_string())
 }
 
 fn scan_nonspecial_token(text: &str) -> Result<MalTokenType, MalError> {
@@ -294,5 +299,18 @@ mod tests {
             Err(MalError::Tokenizer(_)) => {}
             _ => assert!(false, "Expected Tokenizer error."),
         }
+    }
+
+    #[test]
+    fn test_tokenize_keywords() {
+        assert_eq!(
+            tokenize(":a"),
+            Ok(vec![MalToken::new(Keyword("a".to_string()))])
+        );
+
+        assert_eq!(
+            tokenize(":ab12"),
+            Ok(vec![MalToken::new(Keyword("ab12".to_string()))])
+        );
     }
 }

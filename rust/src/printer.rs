@@ -15,6 +15,7 @@ pub fn pr_str(mal_value: &MalValue, print_readably: bool) -> String {
                 val.to_string()
             }
         }
+        Keyword(ref val) => format!(":{}", val),
         List(ref list) => pr_seq(list, "(", ")", print_readably),
         Vector(ref vec) => pr_seq(vec, "[", "]", print_readably),
         RustFunc(_) => "#<rust_function>".to_string(),
@@ -142,6 +143,15 @@ mod tests {
         assert_eq!(
             pr_str(&MalValue::new(Str("123\\abc".to_string())), false),
             "123\\abc"
+        );
+    }
+
+    #[test]
+    fn test_pr_str_keyword() {
+        assert_eq!(pr_str(&MalValue::new(Keyword("a".to_string())), true), ":a");
+        assert_eq!(
+            pr_str(&MalValue::new(Keyword("abc123".to_string())), true),
+            ":abc123"
         );
     }
 
