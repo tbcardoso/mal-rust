@@ -25,6 +25,7 @@ pub enum MalValueType {
     Symbol(String),
     Str(String),
     List(Vec<MalValue>),
+    Vector(Vec<MalValue>),
     RustFunc(RustFunction),
 }
 

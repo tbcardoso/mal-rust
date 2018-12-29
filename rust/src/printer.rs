@@ -9,7 +9,8 @@ pub fn pr_str(mal_value: &MalValue) -> String {
         Number(val) => val.to_string(),
         Symbol(ref val) => val.clone(),
         Str(ref val) => escape_string(&val),
-        List(ref list) => pr_list(list),
+        List(ref list) => pr_seq(list, "(", ")"),
+        Vector(ref vec) => pr_seq(vec, "[", "]"),
         RustFunc(_) => "#<rust_function>".to_string(),
     }
 }
@@ -31,10 +32,10 @@ fn escape_string(text: &str) -> String {
     format!("\"{}\"", escaped_str)
 }
 
-fn pr_list(list: &Vec<MalValue>) -> String {
+fn pr_seq(list: &[MalValue], start: &str, end: &str) -> String {
     let elements: Vec<String> = list.iter().map(|val| pr_str(val)).collect();
 
-    format!("({})", elements.join(" "))
+    format!("{}{}{}", start, elements.join(" "), end)
 }
 
 #[cfg(test)]
@@ -114,6 +115,23 @@ mod tests {
                 .collect()
             ))),
             "(+ 456 y)"
+        );
+    }
+
+    #[test]
+    fn test_pr_str_vector() {
+        assert_eq!(pr_str(&MalValue::new(List(Vec::new()))), "()");
+        assert_eq!(
+            pr_str(&MalValue::new(Vector(
+                vec![
+                    MalValue::new(Symbol("x".to_string())),
+                    MalValue::new(Number(456.)),
+                    MalValue::new(Symbol("y".to_string())),
+                ]
+                .into_iter()
+                .collect()
+            ))),
+            "[x 456 y]"
         );
     }
 

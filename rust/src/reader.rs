@@ -1,9 +1,8 @@
 use crate::tokenizer::tokenize;
 use crate::types::MalError::*;
 use crate::types::MalTokenType;
-use crate::types::MalTokenType::LParen;
 use crate::types::MalValueType::*;
-use crate::types::{MalResult, MalToken, MalValue};
+use crate::types::{MalError, MalResult, MalToken, MalValue};
 
 #[derive(Debug)]
 struct Reader {
@@ -51,12 +50,21 @@ fn read_form(reader: &mut Reader) -> MalResult {
         .ok_or_else(|| Parser("Unexpected EOF".to_string()))?
         .token_type
     {
-        LParen => read_list(reader),
+        MalTokenType::LParen => read_list(reader),
+        MalTokenType::LBracket => read_vector(reader),
         _ => read_atom(reader),
     }
 }
 
 fn read_list(reader: &mut Reader) -> MalResult {
+    Ok(MalValue::new(List(read_seq(reader, &MalTokenType::RParen)?)))
+}
+
+fn read_vector(reader: &mut Reader) -> MalResult {
+    Ok(MalValue::new(Vector(read_seq(reader, &MalTokenType::RBracket)?)))
+}
+
+fn read_seq(reader: &mut Reader, end_token: &MalTokenType) -> Result<Vec<MalValue>, MalError> {
     reader.next().unwrap();
 
     let mut elems = Vec::new();
@@ -64,18 +72,18 @@ fn read_list(reader: &mut Reader) -> MalResult {
     loop {
         match reader
             .peek()
-            .ok_or_else(|| Parser("Expected ')', got EOF".to_string()))?
+            .ok_or_else(|| Parser(format!("Expected '{:?}', got EOF", end_token).to_string()))?
             .token_type
-        {
-            MalTokenType::RParen => {
-                reader.next().unwrap();
-                break;
+            {
+                ref t if t == end_token => {
+                    reader.next().unwrap();
+                    break;
+                }
+                _ => elems.push(read_form(reader)?),
             }
-            _ => elems.push(read_form(reader)?),
-        }
     }
 
-    Ok(MalValue::new(List(elems)))
+    Ok(elems)
 }
 
 fn read_atom(reader: &mut Reader) -> MalResult {
@@ -261,6 +269,63 @@ mod tests {
         );
 
         match read_str("(h 12") {
+            Err(MalError::Parser(_)) => {}
+            _ => assert!(false, "Expected Parser error."),
+        }
+    }
+
+    #[test]
+    fn test_read_str_vector() {
+        assert_eq!(read_str("[]"), Ok(MalValue::new(Vector(Vec::new()))));
+
+        assert_eq!(
+            read_str("[\"abc\"]"),
+            Ok(MalValue::new(Vector(
+                vec![MalValue::new(Str("abc".to_string())),]
+                    .into_iter()
+                    .collect()
+            )))
+        );
+
+        assert_eq!(
+            read_str("[x y 123.1]"),
+            Ok(MalValue::new(Vector(
+                vec![
+                    MalValue::new(Symbol("x".to_string())),
+                    MalValue::new(Symbol("y".to_string())),
+                    MalValue::new(Number(123.1)),
+                ]
+                .into_iter()
+                .collect()
+            )))
+        );
+
+        assert_eq!(
+            read_str("[z [i [j] 5] 123]"),
+            Ok(MalValue::new(Vector(
+                vec![
+                    MalValue::new(Symbol("z".to_string())),
+                    MalValue::new(Vector(
+                        vec![
+                            MalValue::new(Symbol("i".to_string())),
+                            MalValue::new(Vector(
+                                vec![MalValue::new(Symbol("j".to_string())),]
+                                    .into_iter()
+                                    .collect()
+                            )),
+                            MalValue::new(Number(5.)),
+                        ]
+                        .into_iter()
+                        .collect()
+                    )),
+                    MalValue::new(Number(123.)),
+                ]
+                .into_iter()
+                .collect()
+            )))
+        );
+
+        match read_str("[1 2") {
             Err(MalError::Parser(_)) => {}
             _ => assert!(false, "Expected Parser error."),
         }
