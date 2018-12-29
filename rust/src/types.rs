@@ -18,6 +18,9 @@ impl MalValue {
 
 #[derive(Debug, PartialEq)]
 pub enum MalValueType {
+    Nil,
+    True,
+    False,
     Number(f64),
     Symbol(String),
     Str(String),
@@ -92,6 +95,9 @@ pub enum MalTokenType {
     RCurly,
     LBracket,
     RBracket,
+    Nil,
+    True,
+    False,
     Number(f64),
     Symbol(String),
     Str(String),

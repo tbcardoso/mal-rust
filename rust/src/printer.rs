@@ -3,6 +3,9 @@ use crate::types::MalValueType::*;
 
 pub fn pr_str(mal_value: &MalValue) -> String {
     match *mal_value.mal_type {
+        Nil => "nil".to_string(),
+        True => "true".to_string(),
+        False => "false".to_string(),
         Number(val) => val.to_string(),
         Symbol(ref val) => val.clone(),
         Str(ref val) => escape_string(&val),
@@ -38,6 +41,21 @@ fn pr_list(list: &Vec<MalValue>) -> String {
 mod tests {
     use super::*;
     use crate::types::RustFunction;
+
+    #[test]
+    fn test_pr_str_nil() {
+        assert_eq!(pr_str(&MalValue::new(Nil)), "nil");
+    }
+
+    #[test]
+    fn test_pr_str_true() {
+        assert_eq!(pr_str(&MalValue::new(True)), "true");
+    }
+
+    #[test]
+    fn test_pr_str_false() {
+        assert_eq!(pr_str(&MalValue::new(False)), "false");
+    }
 
     #[test]
     fn test_pr_str_number() {

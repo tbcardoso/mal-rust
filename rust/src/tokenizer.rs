@@ -71,6 +71,18 @@ fn unescape_char(c: char) -> char {
 }
 
 fn scan_nonspecial_token(text: &str) -> Result<MalTokenType, MalError> {
+
+    let reserved_name = match text {
+        "nil" => Some(Nil),
+        "true" => Some(True),
+        "false" => Some(False),
+        _ => None,
+    };
+
+    if reserved_name.is_some() {
+        return Ok(reserved_name.unwrap());
+    }
+
     const NUMBER_RE_STR: &str = r#"^-?\d+\.?\d*$"#;
     lazy_static! {
         static ref NUMBER_RE: Regex = Regex::new(NUMBER_RE_STR).unwrap();
@@ -178,6 +190,21 @@ mod tests {
                 MalToken::new(RBracket),
             ])
         );
+    }
+
+    #[test]
+    fn test_tokenize_nil() {
+        assert_eq!(tokenize("nil"), Ok(vec![MalToken::new(Nil)]));
+    }
+
+    #[test]
+    fn test_tokenize_true() {
+        assert_eq!(tokenize("true"), Ok(vec![MalToken::new(True)]));
+    }
+
+    #[test]
+    fn test_tokenize_false() {
+        assert_eq!(tokenize("false"), Ok(vec![MalToken::new(False)]));
     }
 
     #[test]

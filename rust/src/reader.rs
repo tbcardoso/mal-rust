@@ -84,6 +84,9 @@ fn read_atom(reader: &mut Reader) -> MalResult {
         .ok_or_else(|| Parser("Unexpected EOF".to_string()))?
         .token_type
     {
+        MalTokenType::Nil => Ok(MalValue::new(Nil)),
+        MalTokenType::True => Ok(MalValue::new(True)),
+        MalTokenType::False => Ok(MalValue::new(False)),
         MalTokenType::Number(val) => Ok(MalValue::new(Number(val))),
         MalTokenType::Symbol(ref val) => Ok(MalValue::new(Symbol(val.clone()))),
         MalTokenType::Str(ref val) => Ok(MalValue::new(Str(val.clone()))),
@@ -153,6 +156,21 @@ mod tests {
         assert_eq!(read_str(""), Err(EmptyProgram));
         assert_eq!(read_str("  \t \n  "), Err(EmptyProgram));
         assert_eq!(read_str("; this is a comment"), Err(EmptyProgram));
+    }
+
+    #[test]
+    fn test_read_str_nil() {
+        assert_eq!(read_str("nil"), Ok(MalValue::new(Nil)));
+    }
+
+    #[test]
+    fn test_read_str_true() {
+        assert_eq!(read_str("true"), Ok(MalValue::new(True)));
+    }
+
+    #[test]
+    fn test_read_str_false() {
+        assert_eq!(read_str("false"), Ok(MalValue::new(False)));
     }
 
     #[test]
