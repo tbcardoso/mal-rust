@@ -8,11 +8,13 @@ pub fn pr_str(mal_value: &MalValue, print_readably: bool) -> String {
         False => "false".to_string(),
         Number(val) => val.to_string(),
         Symbol(ref val) => val.clone(),
-        Str(ref val) => if print_readably {
-            escape_string(&val)
-        } else {
-            val.to_string()
-        },
+        Str(ref val) => {
+            if print_readably {
+                escape_string(&val)
+            } else {
+                val.to_string()
+            }
+        }
         List(ref list) => pr_seq(list, "(", ")", print_readably),
         Vector(ref vec) => pr_seq(vec, "[", "]", print_readably),
         RustFunc(_) => "#<rust_function>".to_string(),
@@ -73,16 +75,28 @@ mod tests {
 
     #[test]
     fn test_pr_str_symbol() {
-        assert_eq!(pr_str(&MalValue::new(Symbol("abc".to_string())), true), "abc");
+        assert_eq!(
+            pr_str(&MalValue::new(Symbol("abc".to_string())), true),
+            "abc"
+        );
         assert_eq!(pr_str(&MalValue::new(Symbol("+".to_string())), true), "+");
-        assert_eq!(pr_str(&MalValue::new(Symbol("ab123".to_string())), true), "ab123");
-        assert_eq!(pr_str(&MalValue::new(Symbol("ab_CD".to_string())), true), "ab_CD");
+        assert_eq!(
+            pr_str(&MalValue::new(Symbol("ab123".to_string())), true),
+            "ab123"
+        );
+        assert_eq!(
+            pr_str(&MalValue::new(Symbol("ab_CD".to_string())), true),
+            "ab_CD"
+        );
     }
 
     #[test]
     fn test_pr_str_str_readably() {
         assert_eq!(pr_str(&MalValue::new(Str("".to_string())), true), r#""""#);
-        assert_eq!(pr_str(&MalValue::new(Str("abc".to_string())), true), r#""abc""#);
+        assert_eq!(
+            pr_str(&MalValue::new(Str("abc".to_string())), true),
+            r#""abc""#
+        );
         assert_eq!(
             pr_str(&MalValue::new(Str("ab 12 ABC".to_string())), true),
             r#""ab 12 ABC""#
@@ -135,15 +149,18 @@ mod tests {
     fn test_pr_str_list() {
         assert_eq!(pr_str(&MalValue::new(List(Vec::new())), true), "()");
         assert_eq!(
-            pr_str(&MalValue::new(List(
-                vec![
-                    MalValue::new(Symbol("+".to_string())),
-                    MalValue::new(Number(456.)),
-                    MalValue::new(Symbol("y".to_string())),
-                ]
+            pr_str(
+                &MalValue::new(List(
+                    vec![
+                        MalValue::new(Symbol("+".to_string())),
+                        MalValue::new(Number(456.)),
+                        MalValue::new(Symbol("y".to_string())),
+                    ]
                     .into_iter()
                     .collect()
-            )), true),
+                )),
+                true
+            ),
             "(+ 456 y)"
         );
     }
@@ -152,15 +169,18 @@ mod tests {
     fn test_pr_str_vector() {
         assert_eq!(pr_str(&MalValue::new(List(Vec::new())), true), "()");
         assert_eq!(
-            pr_str(&MalValue::new(Vector(
-                vec![
-                    MalValue::new(Symbol("x".to_string())),
-                    MalValue::new(Number(456.)),
-                    MalValue::new(Symbol("y".to_string())),
-                ]
+            pr_str(
+                &MalValue::new(Vector(
+                    vec![
+                        MalValue::new(Symbol("x".to_string())),
+                        MalValue::new(Number(456.)),
+                        MalValue::new(Symbol("y".to_string())),
+                    ]
                     .into_iter()
                     .collect()
-            )), true),
+                )),
+                true
+            ),
             "[x 456 y]"
         );
     }
@@ -168,9 +188,10 @@ mod tests {
     #[test]
     fn test_pr_str_rustfunc() {
         assert_eq!(
-            pr_str(&MalValue::new(RustFunc(RustFunction(|_| Ok(
-                MalValue::new(Number(0.))
-            )))), true),
+            pr_str(
+                &MalValue::new(RustFunc(RustFunction(|_| Ok(MalValue::new(Number(0.)))))),
+                true
+            ),
             "#<rust_function>"
         );
     }

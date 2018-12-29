@@ -57,11 +57,17 @@ fn read_form(reader: &mut Reader) -> MalResult {
 }
 
 fn read_list(reader: &mut Reader) -> MalResult {
-    Ok(MalValue::new(List(read_seq(reader, &MalTokenType::RParen)?)))
+    Ok(MalValue::new(List(read_seq(
+        reader,
+        &MalTokenType::RParen,
+    )?)))
 }
 
 fn read_vector(reader: &mut Reader) -> MalResult {
-    Ok(MalValue::new(Vector(read_seq(reader, &MalTokenType::RBracket)?)))
+    Ok(MalValue::new(Vector(read_seq(
+        reader,
+        &MalTokenType::RBracket,
+    )?)))
 }
 
 fn read_seq(reader: &mut Reader, end_token: &MalTokenType) -> Result<Vec<MalValue>, MalError> {
@@ -74,13 +80,13 @@ fn read_seq(reader: &mut Reader, end_token: &MalTokenType) -> Result<Vec<MalValu
             .peek()
             .ok_or_else(|| Parser(format!("Expected '{:?}', got EOF", end_token).to_string()))?
             .token_type
-            {
-                ref t if t == end_token => {
-                    reader.next().unwrap();
-                    break;
-                }
-                _ => elems.push(read_form(reader)?),
+        {
+            ref t if t == end_token => {
+                reader.next().unwrap();
+                break;
             }
+            _ => elems.push(read_form(reader)?),
+        }
     }
 
     Ok(elems)
