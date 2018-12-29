@@ -7,7 +7,7 @@ pub fn pr_str(mal_value: &MalValue) -> String {
         Symbol(ref val) => val.clone(),
         Str(ref val) => escape_string(&val),
         List(ref list) => pr_list(list),
-        RustFunc(_) => "#".to_string(),
+        RustFunc(_) => "#<rust_function>".to_string(),
     }
 }
 
@@ -105,7 +105,7 @@ mod tests {
             pr_str(&MalValue::new(RustFunc(RustFunction(|_| Ok(
                 MalValue::new(Number(0.))
             ))))),
-            "#"
+            "#<rust_function>"
         );
     }
 }
