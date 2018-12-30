@@ -1,5 +1,7 @@
+use crate::types::MalMap;
 use crate::types::MalValue;
 use crate::types::MalValueType::*;
+use std::iter::once;
 
 pub fn pr_str(mal_value: &MalValue, print_readably: bool) -> String {
     match *mal_value.mal_type {
@@ -18,6 +20,7 @@ pub fn pr_str(mal_value: &MalValue, print_readably: bool) -> String {
         Keyword(ref val) => format!(":{}", val),
         List(ref list) => pr_seq(list, "(", ")", print_readably),
         Vector(ref vec) => pr_seq(vec, "[", "]", print_readably),
+        Map(ref mal_map) => pr_map(mal_map, print_readably),
         RustFunc(_) => "#<rust_function>".to_string(),
     }
 }
@@ -45,9 +48,19 @@ fn pr_seq(list: &[MalValue], start: &str, end: &str, print_readably: bool) -> St
     format!("{}{}{}", start, elements.join(" "), end)
 }
 
+fn pr_map(mal_map: &MalMap, print_readably: bool) -> String {
+    let map_args: Vec<_> = mal_map
+        .iter()
+        .flat_map(|(key, val)| once(key.clone()).chain(once(val.clone())))
+        .collect();
+
+    pr_seq(map_args.as_slice(), "{", "}", print_readably)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::types::MalMap;
     use crate::types::RustFunction;
 
     #[test]
@@ -192,6 +205,27 @@ mod tests {
                 true
             ),
             "[x 456 y]"
+        );
+    }
+
+    #[test]
+    fn test_pr_str_hashmap() {
+        assert_eq!(pr_str(&MalValue::new(Map(MalMap::new())), true), "{}");
+
+        assert_eq!(
+            pr_str(
+                &MalValue::new(Map(MalMap::from_arguments(&vec![
+                    MalValue::new(Keyword("a".to_string())),
+                    MalValue::new(Map(MalMap::from_arguments(&vec![
+                        MalValue::new(Str("b".to_string())),
+                        MalValue::new(Number(12.)),
+                    ])
+                    .unwrap())),
+                ])
+                .unwrap())),
+                true
+            ),
+            "{:a {\"b\" 12}}"
         );
     }
 

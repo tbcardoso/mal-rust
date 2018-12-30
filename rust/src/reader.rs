@@ -2,7 +2,7 @@ use crate::tokenizer::tokenize;
 use crate::types::MalError::*;
 use crate::types::MalTokenType;
 use crate::types::MalValueType::*;
-use crate::types::{MalError, MalResult, MalToken, MalValue};
+use crate::types::{MalError, MalMap, MalResult, MalToken, MalValue};
 
 #[derive(Debug)]
 struct Reader {
@@ -52,6 +52,7 @@ fn read_form(reader: &mut Reader) -> MalResult {
     {
         MalTokenType::LParen => read_list(reader),
         MalTokenType::LBracket => read_vector(reader),
+        MalTokenType::LCurly => read_map(reader),
         _ => read_atom(reader),
     }
 }
@@ -67,6 +68,12 @@ fn read_vector(reader: &mut Reader) -> MalResult {
     Ok(MalValue::new(Vector(read_seq(
         reader,
         &MalTokenType::RBracket,
+    )?)))
+}
+
+fn read_map(reader: &mut Reader) -> MalResult {
+    Ok(MalValue::new(Map(MalMap::from_arguments(
+        read_seq(reader, &MalTokenType::RCurly)?.as_slice(),
     )?)))
 }
 
@@ -113,6 +120,7 @@ fn read_atom(reader: &mut Reader) -> MalResult {
 mod tests {
     use super::*;
     use crate::types::MalError;
+    use crate::types::MalMap;
     use crate::types::MalTokenType;
     use crate::types::MalTokenType::{LParen, RParen};
 
@@ -309,43 +317,73 @@ mod tests {
 
         assert_eq!(
             read_str("[x y 123.1]"),
-            Ok(MalValue::new(Vector(
-                vec![
-                    MalValue::new(Symbol("x".to_string())),
-                    MalValue::new(Symbol("y".to_string())),
-                    MalValue::new(Number(123.1)),
-                ]
-                .into_iter()
-                .collect()
-            )))
+            Ok(MalValue::new(Vector(vec![
+                MalValue::new(Symbol("x".to_string())),
+                MalValue::new(Symbol("y".to_string())),
+                MalValue::new(Number(123.1)),
+            ])))
         );
 
         assert_eq!(
             read_str("[z [i [j] 5] 123]"),
-            Ok(MalValue::new(Vector(
-                vec![
-                    MalValue::new(Symbol("z".to_string())),
-                    MalValue::new(Vector(
-                        vec![
-                            MalValue::new(Symbol("i".to_string())),
-                            MalValue::new(Vector(
-                                vec![MalValue::new(Symbol("j".to_string())),]
-                                    .into_iter()
-                                    .collect()
-                            )),
-                            MalValue::new(Number(5.)),
-                        ]
-                        .into_iter()
-                        .collect()
-                    )),
-                    MalValue::new(Number(123.)),
-                ]
-                .into_iter()
-                .collect()
-            )))
+            Ok(MalValue::new(Vector(vec![
+                MalValue::new(Symbol("z".to_string())),
+                MalValue::new(Vector(vec![
+                    MalValue::new(Symbol("i".to_string())),
+                    MalValue::new(Vector(vec![MalValue::new(Symbol("j".to_string())),])),
+                    MalValue::new(Number(5.)),
+                ])),
+                MalValue::new(Number(123.)),
+            ])))
         );
 
         match read_str("[1 2") {
+            Err(MalError::Parser(_)) => {}
+            _ => assert!(false, "Expected Parser error."),
+        }
+    }
+
+    #[test]
+    fn test_read_str_hash_map() {
+        assert_eq!(read_str("{}"), Ok(MalValue::new(Map(MalMap::new()))));
+
+        assert_eq!(
+            read_str("{\"a\" \"qwerty\"}"),
+            Ok(MalValue::new(Map(MalMap::from_arguments(
+                vec![
+                    MalValue::new(Str("a".to_string())),
+                    MalValue::new(Str("qwerty".to_string())),
+                ]
+                .as_slice()
+            )
+            .unwrap())))
+        );
+
+        assert_eq!(
+            read_str("{:s1 {:s2 123}}"),
+            Ok(MalValue::new(Map(MalMap::from_arguments(
+                vec![
+                    MalValue::new(Keyword("s1".to_string())),
+                    MalValue::new(Map(MalMap::from_arguments(
+                        vec![
+                            MalValue::new(Keyword("s2".to_string())),
+                            MalValue::new(Number(123.)),
+                        ]
+                        .as_slice()
+                    )
+                    .unwrap())),
+                ]
+                .as_slice()
+            )
+            .unwrap())))
+        );
+
+        match read_str("{:a 1 :b}") {
+            Err(MalError::Parser(_)) => {}
+            _ => assert!(false, "Expected Parser error."),
+        }
+
+        match read_str("{:a 1") {
             Err(MalError::Parser(_)) => {}
             _ => assert!(false, "Expected Parser error."),
         }

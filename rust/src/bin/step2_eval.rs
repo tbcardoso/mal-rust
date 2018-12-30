@@ -2,8 +2,9 @@ use malrs::env::Env;
 use malrs::printer::pr_str;
 use malrs::reader::read_str;
 use malrs::readline::Readline;
-use malrs::types::MalValueType::{List, Number, RustFunc, Symbol, Vector};
-use malrs::types::{MalError, MalResult, MalValue, RustFunction};
+use malrs::types::MalValueType::{List, Map, Number, RustFunc, Symbol, Vector};
+use malrs::types::{MalError, MalMap, MalResult, MalValue, RustFunction};
+use std::iter::once;
 
 fn main() {
     let env = create_env();
@@ -139,8 +140,20 @@ fn eval_ast(ast: &MalValue, env: &Env) -> MalResult {
         Symbol(ref s) => env.get(&s),
         List(ref list) => Ok(MalValue::new(List(eval_ast_seq(list, env)?))),
         Vector(ref vec) => Ok(MalValue::new(Vector(eval_ast_seq(vec, env)?))),
+        Map(ref mal_map) => eval_map(mal_map, env),
         _ => Ok(ast.clone()),
     }
+}
+
+fn eval_map(mal_map: &MalMap, env: &Env) -> MalResult {
+    let map_args: Result<Vec<_>, _> = mal_map
+        .iter()
+        .flat_map(|(key, val)| once(Ok(key.clone())).chain(once(eval(val, env))))
+        .collect();
+
+    Ok(MalValue::new(Map(MalMap::from_arguments(
+        map_args?.as_slice(),
+    )?)))
 }
 
 fn eval_ast_seq(seq: &[MalValue], env: &Env) -> Result<Vec<MalValue>, MalError> {
