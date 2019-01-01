@@ -251,49 +251,31 @@ mod tests {
 
         assert_eq!(
             read_str("(h)"),
-            Ok(MalValue::new(List(
-                vec![MalValue::new(Symbol("h".to_string())),]
-                    .into_iter()
-                    .collect()
-            )))
+            Ok(MalValue::new(List(vec![MalValue::new(Symbol(
+                "h".to_string()
+            )),])))
         );
 
         assert_eq!(
             read_str("(- xy 123.1)"),
-            Ok(MalValue::new(List(
-                vec![
-                    MalValue::new(Symbol("-".to_string())),
-                    MalValue::new(Symbol("xy".to_string())),
-                    MalValue::new(Number(123.1)),
-                ]
-                .into_iter()
-                .collect()
-            )))
+            Ok(MalValue::new(List(vec![
+                MalValue::new(Symbol("-".to_string())),
+                MalValue::new(Symbol("xy".to_string())),
+                MalValue::new(Number(123.1)),
+            ])))
         );
 
         assert_eq!(
             read_str("(* (f (g) 1) 123)"),
-            Ok(MalValue::new(List(
-                vec![
-                    MalValue::new(Symbol("*".to_string())),
-                    MalValue::new(List(
-                        vec![
-                            MalValue::new(Symbol("f".to_string())),
-                            MalValue::new(List(
-                                vec![MalValue::new(Symbol("g".to_string())),]
-                                    .into_iter()
-                                    .collect()
-                            )),
-                            MalValue::new(Number(1.)),
-                        ]
-                        .into_iter()
-                        .collect()
-                    )),
-                    MalValue::new(Number(123.)),
-                ]
-                .into_iter()
-                .collect()
-            )))
+            Ok(MalValue::new(List(vec![
+                MalValue::new(Symbol("*".to_string())),
+                MalValue::new(List(vec![
+                    MalValue::new(Symbol("f".to_string())),
+                    MalValue::new(List(vec![MalValue::new(Symbol("g".to_string())),])),
+                    MalValue::new(Number(1.)),
+                ])),
+                MalValue::new(Number(123.)),
+            ])))
         );
 
         match read_str("(h 12") {
@@ -308,11 +290,9 @@ mod tests {
 
         assert_eq!(
             read_str("[\"abc\"]"),
-            Ok(MalValue::new(Vector(
-                vec![MalValue::new(Str("abc".to_string())),]
-                    .into_iter()
-                    .collect()
-            )))
+            Ok(MalValue::new(Vector(vec![MalValue::new(Str(
+                "abc".to_string()
+            )),])))
         );
 
         assert_eq!(

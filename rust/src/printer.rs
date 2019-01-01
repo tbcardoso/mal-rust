@@ -173,15 +173,11 @@ mod tests {
         assert_eq!(pr_str(&MalValue::new(List(Vec::new())), true), "()");
         assert_eq!(
             pr_str(
-                &MalValue::new(List(
-                    vec![
-                        MalValue::new(Symbol("+".to_string())),
-                        MalValue::new(Number(456.)),
-                        MalValue::new(Symbol("y".to_string())),
-                    ]
-                    .into_iter()
-                    .collect()
-                )),
+                &MalValue::new(List(vec![
+                    MalValue::new(Symbol("+".to_string())),
+                    MalValue::new(Number(456.)),
+                    MalValue::new(Symbol("y".to_string())),
+                ])),
                 true
             ),
             "(+ 456 y)"
@@ -193,15 +189,11 @@ mod tests {
         assert_eq!(pr_str(&MalValue::new(List(Vec::new())), true), "()");
         assert_eq!(
             pr_str(
-                &MalValue::new(Vector(
-                    vec![
-                        MalValue::new(Symbol("x".to_string())),
-                        MalValue::new(Number(456.)),
-                        MalValue::new(Symbol("y".to_string())),
-                    ]
-                    .into_iter()
-                    .collect()
-                )),
+                &MalValue::new(Vector(vec![
+                    MalValue::new(Symbol("x".to_string())),
+                    MalValue::new(Number(456.)),
+                    MalValue::new(Symbol("y".to_string())),
+                ])),
                 true
             ),
             "[x 456 y]"
