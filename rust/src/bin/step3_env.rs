@@ -214,7 +214,7 @@ fn apply_special_form_let(args: &[MalValue], env: &Env) -> MalResult {
 
     let mut inner_env = Env::with_outer_env(env);
 
-    for i in (0..bindings.len() - 1).step_by(2) {
+    for i in (0..bindings.len()).step_by(2) {
         let binding_name = if let Symbol(ref symbol) = *bindings[i].mal_type {
             Ok(symbol)
         } else {
@@ -319,6 +319,12 @@ mod tests {
             rep("(let* (a 2 b (+ a a) c (- b a)) (+ (* a b) c))", &mut env),
             Ok("10".to_string())
         );
+    }
+
+    #[test]
+    fn test_special_form_let_empty_bindings() {
+        let mut env = create_root_env();
+        assert_eq!(rep("(let* () 123)", &mut env), Ok("123".to_string()));
     }
 
     #[test]
