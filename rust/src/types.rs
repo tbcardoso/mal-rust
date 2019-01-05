@@ -105,6 +105,12 @@ impl MalMap {
     }
 }
 
+impl Default for MalMap {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct MalMapIter<'a> {
     inner: hash_map::Iter<'a, MalMapKey, MalValue>,

@@ -70,7 +70,7 @@ fn eval_arithmetic_operation(args: &[MalValue], op: fn(f64, f64) -> f64) -> MalR
         )));
     }
 
-    let arg1 = if let Number(n) = *args.get(0).unwrap().mal_type {
+    let arg_1 = if let Number(n) = *args[0].mal_type {
         Ok(n)
     } else {
         Err(MalError::RustFunction(
@@ -78,7 +78,7 @@ fn eval_arithmetic_operation(args: &[MalValue], op: fn(f64, f64) -> f64) -> MalR
         ))
     }?;
 
-    let arg2 = if let Number(n) = *args.get(1).unwrap().mal_type {
+    let arg_2 = if let Number(n) = *args[1].mal_type {
         Ok(n)
     } else {
         Err(MalError::RustFunction(
@@ -86,7 +86,7 @@ fn eval_arithmetic_operation(args: &[MalValue], op: fn(f64, f64) -> f64) -> MalR
         ))
     }?;
 
-    Ok(MalValue::new(Number(op(arg1, arg2))))
+    Ok(MalValue::new(Number(op(arg_1, arg_2))))
 }
 
 fn rep(s: &str, env: &mut Env) -> Result<String, MalError> {
@@ -199,8 +199,7 @@ fn apply_special_form_let(args: &[MalValue], env: &Env) -> MalResult {
     }
 
     let bindings = match *args[0].mal_type {
-        List(ref bindings) => Ok(bindings.as_slice()),
-        Vector(ref bindings) => Ok(bindings.as_slice()),
+        List(ref bindings) | Vector(ref bindings) => Ok(bindings.as_slice()),
         _ => Err(MalError::SpecialForm(
             "let* first argument must be a list or a vector".to_string(),
         )),
@@ -277,7 +276,10 @@ mod tests {
     #[test]
     fn test_map_eval() {
         let mut env = create_root_env();
-        assert_eq!(rep("{:a {:b (* 3 2)}}", &mut env), Ok("{:a {:b 6}}".to_string()));
+        assert_eq!(
+            rep("{:a {:b (* 3 2)}}", &mut env),
+            Ok("{:a {:b 6}}".to_string())
+        );
     }
 
     #[test]

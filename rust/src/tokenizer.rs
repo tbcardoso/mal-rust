@@ -95,7 +95,7 @@ fn scan_nonspecial_token(text: &str) -> Result<MalTokenType, MalError> {
     if NUMBER_RE.is_match(&text) {
         return Ok(Number(
             text.parse()
-                .expect(&format!("Error parsing number: {}", text)),
+                .unwrap_or_else(|_| panic!("Error parsing number: {}", text)),
         ));
     }
 
@@ -215,7 +215,10 @@ mod tests {
     fn test_tokenize_numbers() {
         assert_eq!(tokenize("1"), Ok(vec![MalToken::new(Number(1.))]));
         assert_eq!(tokenize("-1"), Ok(vec![MalToken::new(Number(-1.))]));
-        assert_eq!(tokenize("123456"), Ok(vec![MalToken::new(Number(123456.))]));
+        assert_eq!(
+            tokenize("123456"),
+            Ok(vec![MalToken::new(Number(123_456.))])
+        );
         assert_eq!(tokenize("12.2"), Ok(vec![MalToken::new(Number(12.2))]));
         assert_eq!(
             tokenize("-123.99"),

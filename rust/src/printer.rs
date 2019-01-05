@@ -206,9 +206,9 @@ mod tests {
 
         assert_eq!(
             pr_str(
-                &MalValue::new(Map(MalMap::from_arguments(&vec![
+                &MalValue::new(Map(MalMap::from_arguments(&[
                     MalValue::new(Keyword("a".to_string())),
-                    MalValue::new(Map(MalMap::from_arguments(&vec![
+                    MalValue::new(Map(MalMap::from_arguments(&[
                         MalValue::new(Str("b".to_string())),
                         MalValue::new(Number(12.)),
                     ])

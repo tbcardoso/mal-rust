@@ -37,7 +37,7 @@ pub fn read_str(program: &str) -> MalResult {
 
     let mal_value = read_form(&mut reader)?;
 
-    if let Some(_) = reader.peek() {
+    if reader.peek().is_some() {
         return Err(Parser("Expected EOF, found token".to_string()));
     }
 

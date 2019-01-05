@@ -36,3 +36,9 @@ impl Readline {
             .expect("Could not save command history.");
     }
 }
+
+impl Default for Readline {
+    fn default() -> Self {
+        Self::new()
+    }
+}

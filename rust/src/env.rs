@@ -50,6 +50,12 @@ impl Env {
     }
 }
 
+impl Default for Env {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -107,5 +113,4 @@ mod tests {
         assert_eq!(env1.get("sym1"), Ok(val1));
         assert_eq!(env2.get("sym1"), Ok(val2));
     }
-
 }

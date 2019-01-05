@@ -70,7 +70,7 @@ fn eval_arithmetic_operation(args: &[MalValue], op: fn(f64, f64) -> f64) -> MalR
         )));
     }
 
-    let arg1 = if let Number(n) = *args.get(0).unwrap().mal_type {
+    let arg_1 = if let Number(n) = *args[0].mal_type {
         Ok(n)
     } else {
         Err(MalError::RustFunction(
@@ -78,7 +78,7 @@ fn eval_arithmetic_operation(args: &[MalValue], op: fn(f64, f64) -> f64) -> MalR
         ))
     }?;
 
-    let arg2 = if let Number(n) = *args.get(1).unwrap().mal_type {
+    let arg_2 = if let Number(n) = *args[1].mal_type {
         Ok(n)
     } else {
         Err(MalError::RustFunction(
@@ -86,7 +86,7 @@ fn eval_arithmetic_operation(args: &[MalValue], op: fn(f64, f64) -> f64) -> MalR
         ))
     }?;
 
-    Ok(MalValue::new(Number(op(arg1, arg2))))
+    Ok(MalValue::new(Number(op(arg_1, arg_2))))
 }
 
 fn rep(s: &str, env: &Env) -> Result<String, MalError> {
