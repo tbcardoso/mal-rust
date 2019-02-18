@@ -1,3 +1,4 @@
+use crate::types::MalValueType::Nil;
 use crate::types::{MalError, MalResult, MalValue};
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -12,10 +13,10 @@ struct EnvImpl {
     outer: Option<Env>,
 }
 
-fn create_env(outer: Option<Env>) -> Env {
+fn create_env(outer: Option<&Env>) -> Env {
     Env(Rc::new(EnvImpl {
         data: RefCell::new(HashMap::new()),
-        outer,
+        outer: outer.cloned(),
     }))
 }
 
@@ -25,7 +26,20 @@ impl Env {
     }
 
     pub fn with_outer_env(outer: &Env) -> Env {
-        create_env(Some(outer.clone()))
+        create_env(Some(outer))
+    }
+
+    pub fn with_binds<S: AsRef<str>>(outer: Option<&Env>, binds: &[S], exprs: &[MalValue]) -> Env {
+        let mut env = create_env(outer);
+
+        for (i, bind) in binds.iter().enumerate() {
+            env.set(
+                bind.as_ref(),
+                exprs.get(i).cloned().unwrap_or_else(|| MalValue::new(Nil)),
+            )
+        }
+
+        env
     }
 
     pub fn set(&mut self, symbol_key: &str, val: MalValue) {
@@ -59,7 +73,7 @@ impl Default for Env {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::types::MalValueType::{Number, Str};
+    use crate::types::MalValueType::{Nil, Number, Str};
 
     fn undefined_symbol_err(symbol_key: &str) -> MalResult {
         Err(MalError::UndefinedSymbol(symbol_key.to_string()))
@@ -112,5 +126,79 @@ mod tests {
 
         assert_eq!(env1.get("sym1"), Ok(val1));
         assert_eq!(env2.get("sym1"), Ok(val2));
+    }
+
+    #[test]
+    fn test_with_binds_empty() {
+        let mut env1 = Env::new();
+        let val = MalValue::new(Str("abc".to_string()));
+        env1.set("sym", val.clone());
+
+        let env2 = Env::with_binds::<&str>(Some(&env1), &[], &[]);
+
+        assert_eq!(env2.get("sym"), Ok(val));
+    }
+
+    #[test]
+    fn test_envs_same_outer() {
+        let mut env1 = Env::new();
+        let val1 = MalValue::new(Str("abc".to_string()));
+        env1.set("sym", val1.clone());
+
+        let val2 = MalValue::new(Number(1.));
+        let env2 = Env::with_binds(Some(&env1), &["sym"], &[val2.clone()]);
+
+        let env3 = Env::with_outer_env(&env1);
+
+        assert_eq!(env2.get("sym"), Ok(val2));
+        assert_eq!(env3.get("sym"), Ok(val1));
+    }
+
+    #[test]
+    fn test_with_binds() {
+        let val1 = MalValue::new(Number(1.));
+        let val2 = MalValue::new(Str("abc".to_string()));
+
+        let env = Env::with_binds(
+            None,
+            &["s1".to_string(), "s2".to_string()],
+            &[val1.clone(), val2.clone()],
+        );
+
+        assert_eq!(env.get("s1"), Ok(val1));
+        assert_eq!(env.get("s2"), Ok(val2));
+    }
+
+    #[test]
+    fn test_with_binds_extra_exprs() {
+        let val1 = MalValue::new(Number(1.));
+        let val2 = MalValue::new(Str("abc".to_string()));
+        let val3 = MalValue::new(Str("xyz".to_string()));
+
+        let env = Env::with_binds(
+            None,
+            &["s1", "s2"],
+            &[val1.clone(), val2.clone(), val3.clone()],
+        );
+
+        assert_eq!(env.get("s1"), Ok(val1));
+        assert_eq!(env.get("s2"), Ok(val2));
+    }
+
+    #[test]
+    fn test_with_binds_extra_binds() {
+        let val1 = MalValue::new(Number(1.));
+        let val2 = MalValue::new(Str("abc".to_string()));
+
+        let env = Env::with_binds(
+            None,
+            &["s1", "s2", "s3", "s4"],
+            &[val1.clone(), val2.clone()],
+        );
+
+        assert_eq!(env.get("s1"), Ok(val1));
+        assert_eq!(env.get("s2"), Ok(val2));
+        assert_eq!(env.get("s3"), Ok(MalValue::new(Nil)));
+        assert_eq!(env.get("s4"), Ok(MalValue::new(Nil)));
     }
 }
