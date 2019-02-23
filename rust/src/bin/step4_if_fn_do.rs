@@ -3,6 +3,7 @@ use malrs::printer::pr_str;
 use malrs::reader::read_str;
 use malrs::readline::Readline;
 use malrs::types::MalFunction;
+use malrs::types::MalValueType;
 use malrs::types::MalValueType::MalFunc;
 use malrs::types::MalValueType::Nil;
 use malrs::types::MalValueType::{List, Map, Number, RustFunc, Symbol, Vector};
@@ -113,6 +114,7 @@ fn eval(ast: &MalValue, env: &mut Env) -> MalResult {
                 Symbol(ref name) if name == "let*" => apply_special_form_let(&list[1..], env),
                 Symbol(ref name) if name == "fn*" => apply_special_form_fn(&list[1..], env),
                 Symbol(ref name) if name == "do" => apply_special_form_do(&list[1..], env),
+                Symbol(ref name) if name == "if" => apply_special_form_if(&list[1..], env),
                 _ => apply_ast(ast, env),
             }
         }
@@ -287,6 +289,28 @@ fn apply_special_form_do(args: &[MalValue], env: &mut Env) -> MalResult {
     Ok(last)
 }
 
+fn apply_special_form_if(args: &[MalValue], env: &mut Env) -> MalResult {
+    if args.len() < 2 || args.len() > 3 {
+        return Err(MalError::SpecialForm(format!(
+            "if expected 2 or 3 arguments, got {}",
+            args.len()
+        )));
+    }
+
+    let test_result = eval(&args[0], env)?;
+
+    match *test_result.mal_type {
+        MalValueType::False | Nil => {
+            if args.len() == 3 {
+                eval(&args[2], env)
+            } else {
+                Ok(MalValue::new(Nil))
+            }
+        }
+        _ => eval(&args[1], env),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -421,5 +445,15 @@ mod tests {
     fn test_special_form_do_empty() {
         let mut env = create_root_env();
         assert_eq!(rep("(do)", &mut env), Ok("nil".to_string()));
+    }
+
+    #[test]
+    fn test_special_form_if() {
+        let mut env = create_root_env();
+        assert_eq!(rep("(if true 1 2)", &mut env), Ok("1".to_string()));
+        assert_eq!(rep("(if true 2)", &mut env), Ok("2".to_string()));
+        assert_eq!(rep("(if false 1 2)", &mut env), Ok("2".to_string()));
+        assert_eq!(rep("(if nil :a :b)", &mut env), Ok(":b".to_string()));
+        assert_eq!(rep("(if false :a)", &mut env), Ok("nil".to_string()));
     }
 }
