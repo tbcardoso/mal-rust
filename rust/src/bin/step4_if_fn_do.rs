@@ -4,6 +4,7 @@ use malrs::reader::read_str;
 use malrs::readline::Readline;
 use malrs::types::MalFunction;
 use malrs::types::MalValueType::MalFunc;
+use malrs::types::MalValueType::Nil;
 use malrs::types::MalValueType::{List, Map, Number, RustFunc, Symbol, Vector};
 use malrs::types::{MalError, MalMap, MalResult, MalValue, RustFunction};
 use std::iter::once;
@@ -111,6 +112,7 @@ fn eval(ast: &MalValue, env: &mut Env) -> MalResult {
                 Symbol(ref name) if name == "def!" => apply_special_form_def(&list[1..], env),
                 Symbol(ref name) if name == "let*" => apply_special_form_let(&list[1..], env),
                 Symbol(ref name) if name == "fn*" => apply_special_form_fn(&list[1..], env),
+                Symbol(ref name) if name == "do" => apply_special_form_do(&list[1..], env),
                 _ => apply_ast(ast, env),
             }
         }
@@ -275,6 +277,16 @@ fn apply_special_form_fn(args: &[MalValue], env: &Env) -> MalResult {
     })))
 }
 
+fn apply_special_form_do(args: &[MalValue], env: &mut Env) -> MalResult {
+    let mut last = MalValue::new(Nil);
+
+    for expr in args.iter() {
+        last = eval(expr, env)?;
+    }
+
+    Ok(last)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -397,5 +409,17 @@ mod tests {
             rep("((fn* [a b] (+ a b)) 2 3)", &mut env),
             Ok("5".to_string())
         );
+    }
+
+    #[test]
+    fn test_special_form_do() {
+        let mut env = create_root_env();
+        assert_eq!(rep("(do 1 :s2 3 :s4)", &mut env), Ok(":s4".to_string()));
+    }
+
+    #[test]
+    fn test_special_form_do_empty() {
+        let mut env = create_root_env();
+        assert_eq!(rep("(do)", &mut env), Ok("nil".to_string()));
     }
 }
