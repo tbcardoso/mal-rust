@@ -2,6 +2,8 @@ use malrs::env::Env;
 use malrs::printer::pr_str;
 use malrs::reader::read_str;
 use malrs::readline::Readline;
+use malrs::types::MalFunction;
+use malrs::types::MalValueType::MalFunc;
 use malrs::types::MalValueType::{List, Map, Number, RustFunc, Symbol, Vector};
 use malrs::types::{MalError, MalMap, MalResult, MalValue, RustFunction};
 use std::iter::once;
@@ -108,6 +110,7 @@ fn eval(ast: &MalValue, env: &mut Env) -> MalResult {
             match *first_arg.mal_type {
                 Symbol(ref name) if name == "def!" => apply_special_form_def(&list[1..], env),
                 Symbol(ref name) if name == "let*" => apply_special_form_let(&list[1..], env),
+                Symbol(ref name) if name == "fn*" => apply_special_form_fn(&list[1..], env),
                 _ => apply_ast(ast, env),
             }
         }
@@ -147,19 +150,24 @@ fn eval_map(mal_map: &MalMap, env: &mut Env) -> MalResult {
 fn apply_ast(ast: &MalValue, env: &mut Env) -> MalResult {
     let evaluated_list_ast = eval_ast(ast, env)?;
     match *evaluated_list_ast.mal_type {
-        List(ref evaluated_list) => {
-            if let RustFunc(ref rust_function) = *evaluated_list
-                .get(0)
-                .expect("Evaluation of non-empty list resulted in empty list.")
-                .mal_type
-            {
-                rust_function.0(&evaluated_list[1..])
-            } else {
-                Err(MalError::Evaluation(
-                    "First element of a list must evaluate to a function.".to_string(),
-                ))
+        List(ref evaluated_list) => match *evaluated_list
+            .get(0)
+            .expect("Evaluation of non-empty list resulted in empty list.")
+            .mal_type
+        {
+            RustFunc(ref rust_function) => rust_function.0(&evaluated_list[1..]),
+            MalFunc(ref mal_func) => {
+                let mut func_env = Env::with_binds(
+                    Some(&mal_func.outer_env),
+                    &mal_func.parameters,
+                    &evaluated_list[1..],
+                );
+                eval(&mal_func.body, &mut func_env)
             }
-        }
+            _ => Err(MalError::Evaluation(
+                "First element of a list must evaluate to a function.".to_string(),
+            )),
+        },
         _ => panic!(
             "Evaluation of list resulted in non-list: {:?}",
             evaluated_list_ast
@@ -230,6 +238,41 @@ fn apply_special_form_let(args: &[MalValue], env: &Env) -> MalResult {
     let arg2 = eval(&args[1], &mut inner_env)?;
 
     Ok(arg2)
+}
+
+fn apply_special_form_fn(args: &[MalValue], env: &Env) -> MalResult {
+    if args.len() != 2 {
+        return Err(MalError::SpecialForm(format!(
+            "fn* expected 2 arguments, got {}",
+            args.len()
+        )));
+    }
+
+    let bindings = match *args[0].mal_type {
+        List(ref bindings) | Vector(ref bindings) => Ok(bindings.as_slice()),
+        _ => Err(MalError::SpecialForm(
+            "fn* first argument must be a list or a vector".to_string(),
+        )),
+    }?;
+
+    let parameters: Result<Vec<String>, _> = bindings
+        .iter()
+        .map(|val| {
+            if let Symbol(ref symbol) = *val.mal_type {
+                Ok(symbol.clone())
+            } else {
+                Err(MalError::SpecialForm(
+                    "fn*! first argument must be a sequence of valid symbol names".to_string(),
+                ))
+            }
+        })
+        .collect();
+
+    Ok(MalValue::new(MalFunc(MalFunction {
+        body: args[1].clone(),
+        parameters: parameters?,
+        outer_env: env.clone(),
+    })))
 }
 
 #[cfg(test)]
@@ -335,6 +378,24 @@ mod tests {
         assert_eq!(
             rep("(let* [a 2 b (+ a 1)] [a b (+ a b)])", &mut env),
             Ok("[2 3 5]".to_string())
+        );
+    }
+
+    #[test]
+    fn test_special_form_fn() {
+        let mut env = create_root_env();
+        assert_eq!(
+            rep("(fn* [a b] (+ a b))", &mut env),
+            Ok("#<function>".to_string())
+        );
+    }
+
+    #[test]
+    fn test_special_form_fn_eval() {
+        let mut env = create_root_env();
+        assert_eq!(
+            rep("((fn* [a b] (+ a b)) 2 3)", &mut env),
+            Ok("5".to_string())
         );
     }
 }

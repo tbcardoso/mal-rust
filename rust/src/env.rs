@@ -4,10 +4,10 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Env(Rc<EnvImpl>);
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 struct EnvImpl {
     data: RefCell<HashMap<String, MalValue>>,
     outer: Option<Env>,

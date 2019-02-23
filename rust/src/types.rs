@@ -1,3 +1,4 @@
+use crate::env::Env;
 use crate::types::MalError::*;
 use std::collections::hash_map;
 use std::collections::HashMap;
@@ -34,6 +35,7 @@ pub enum MalValueType {
     Vector(Vec<MalValue>),
     Map(MalMap),
     RustFunc(RustFunction),
+    MalFunc(MalFunction),
 }
 
 #[derive(Debug, PartialEq)]
@@ -155,6 +157,13 @@ impl PartialEq for RustFunction {
     fn eq(&self, other: &RustFunction) -> bool {
         self.0 as usize == other.0 as usize
     }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct MalFunction {
+    pub body: MalValue,
+    pub parameters: Vec<String>,
+    pub outer_env: Env,
 }
 
 #[derive(Debug, PartialEq)]

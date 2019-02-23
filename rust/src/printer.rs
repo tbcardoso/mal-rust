@@ -22,6 +22,7 @@ pub fn pr_str(mal_value: &MalValue, print_readably: bool) -> String {
         Vector(ref vec) => pr_seq(vec, "[", "]", print_readably),
         Map(ref mal_map) => pr_map(mal_map, print_readably),
         RustFunc(_) => "#<rust_function>".to_string(),
+        MalFunc(_) => "#<function>".to_string(),
     }
 }
 
@@ -60,6 +61,8 @@ fn pr_map(mal_map: &MalMap, print_readably: bool) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::env::Env;
+    use crate::types::MalFunction;
     use crate::types::MalMap;
     use crate::types::RustFunction;
 
@@ -229,6 +232,21 @@ mod tests {
                 true
             ),
             "#<rust_function>"
+        );
+    }
+
+    #[test]
+    fn test_pr_str_malfunc() {
+        assert_eq!(
+            pr_str(
+                &MalValue::new(MalFunc(MalFunction {
+                    body: MalValue::new(Nil),
+                    parameters: Vec::new(),
+                    outer_env: Env::new(),
+                })),
+                true
+            ),
+            "#<function>"
         );
     }
 }
