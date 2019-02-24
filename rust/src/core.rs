@@ -15,6 +15,10 @@ pub fn ns() -> Vec<(&'static str, MalValue)> {
         ("empty?", rust_func(empty)),
         ("count", rust_func(count)),
         ("=", rust_func(equals)),
+        ("<", rust_func(lt)),
+        ("<=", rust_func(lte)),
+        (">", rust_func(gt)),
+        (">=", rust_func(gte)),
     ]
 }
 
@@ -32,6 +36,16 @@ fn arg_count_eq(args: &[MalValue], expected: usize) -> Result<(), MalError> {
     }
 
     Ok(())
+}
+
+fn get_number_arg(arg: &MalValue) -> Result<f64, MalError> {
+    if let Number(n) = *arg.mal_type {
+        Ok(n)
+    } else {
+        Err(MalError::RustFunction(
+            "Argument must be a number".to_string(),
+        ))
+    }
 }
 
 fn add(args: &[MalValue], _env: &mut Env) -> MalResult {
@@ -53,21 +67,8 @@ fn divide(args: &[MalValue], _env: &mut Env) -> MalResult {
 fn eval_arithmetic_operation(args: &[MalValue], op: fn(f64, f64) -> f64) -> MalResult {
     arg_count_eq(args, 2)?;
 
-    let arg_1 = if let Number(n) = *args[0].mal_type {
-        Ok(n)
-    } else {
-        Err(MalError::RustFunction(
-            "First argument must be a number".to_string(),
-        ))
-    }?;
-
-    let arg_2 = if let Number(n) = *args[1].mal_type {
-        Ok(n)
-    } else {
-        Err(MalError::RustFunction(
-            "Second argument must be a number".to_string(),
-        ))
-    }?;
+    let arg_1 = get_number_arg(&args[0])?;
+    let arg_2 = get_number_arg(&args[1])?;
 
     Ok(MalValue::new(Number(op(arg_1, arg_2))))
 }
@@ -123,6 +124,42 @@ fn equals(args: &[MalValue], _env: &mut Env) -> MalResult {
     arg_count_eq(args, 2)?;
 
     Ok(MalValue::new_boolean(args[0] == args[1]))
+}
+
+fn lt(args: &[MalValue], _env: &mut Env) -> MalResult {
+    arg_count_eq(args, 2)?;
+
+    let arg_1 = get_number_arg(&args[0])?;
+    let arg_2 = get_number_arg(&args[1])?;
+
+    Ok(MalValue::new_boolean(arg_1 < arg_2))
+}
+
+fn lte(args: &[MalValue], _env: &mut Env) -> MalResult {
+    arg_count_eq(args, 2)?;
+
+    let arg_1 = get_number_arg(&args[0])?;
+    let arg_2 = get_number_arg(&args[1])?;
+
+    Ok(MalValue::new_boolean(arg_1 <= arg_2))
+}
+
+fn gt(args: &[MalValue], _env: &mut Env) -> MalResult {
+    arg_count_eq(args, 2)?;
+
+    let arg_1 = get_number_arg(&args[0])?;
+    let arg_2 = get_number_arg(&args[1])?;
+
+    Ok(MalValue::new_boolean(arg_1 > arg_2))
+}
+
+fn gte(args: &[MalValue], _env: &mut Env) -> MalResult {
+    arg_count_eq(args, 2)?;
+
+    let arg_1 = get_number_arg(&args[0])?;
+    let arg_2 = get_number_arg(&args[1])?;
+
+    Ok(MalValue::new_boolean(arg_1 >= arg_2))
 }
 
 fn prn(args: &[MalValue], _env: &mut Env) -> MalResult {
