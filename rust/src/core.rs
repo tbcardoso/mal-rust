@@ -14,6 +14,7 @@ pub fn ns() -> Vec<(&'static str, MalValue)> {
         ("list?", rust_func(is_list)),
         ("empty?", rust_func(empty)),
         ("count", rust_func(count)),
+        ("=", rust_func(equals)),
     ]
 }
 
@@ -116,6 +117,12 @@ fn count(args: &[MalValue], _env: &mut Env) -> MalResult {
         Nil => Ok(MalValue::new(Number(0.))),
         _ => Err(MalError::RustFunction("Invalid argument".to_string())),
     }
+}
+
+fn equals(args: &[MalValue], _env: &mut Env) -> MalResult {
+    arg_count_eq(args, 2)?;
+
+    Ok(MalValue::new_boolean(args[0] == args[1]))
 }
 
 fn prn(args: &[MalValue], _env: &mut Env) -> MalResult {

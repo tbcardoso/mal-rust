@@ -21,6 +21,14 @@ impl MalValue {
         }
     }
 
+    pub fn new_boolean(boolean: bool) -> MalValue {
+        if boolean {
+            MalValue::new(MalValueType::True)
+        } else {
+            MalValue::new(MalValueType::False)
+        }
+    }
+
     pub fn is_list(&self) -> bool {
         if let MalValueType::List(_) = *self.mal_type {
             true
@@ -30,7 +38,7 @@ impl MalValue {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub enum MalValueType {
     Nil,
     True,
@@ -44,6 +52,30 @@ pub enum MalValueType {
     Map(MalMap),
     RustFunc(RustFunction),
     MalFunc(MalFunction),
+}
+
+impl PartialEq for MalValueType {
+    fn eq(&self, other: &MalValueType) -> bool {
+        use crate::types::MalValueType::*;
+
+        match (self, other) {
+            (Nil, Nil) => true,
+            (True, True) => true,
+            (False, False) => true,
+            (Number(l), Number(r)) => l == r,
+            (Symbol(l), Symbol(r)) => l == r,
+            (Str(l), Str(r)) => l == r,
+            (Keyword(l), Keyword(r)) => l == r,
+            (List(l), List(r))
+            | (Vector(l), Vector(r))
+            | (List(l), Vector(r))
+            | (Vector(l), List(r)) => l == r,
+            (Map(l), Map(r)) => l == r,
+            (RustFunc(l), RustFunc(r)) => l == r,
+            (MalFunc(l), MalFunc(r)) => l == r,
+            _ => false,
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
