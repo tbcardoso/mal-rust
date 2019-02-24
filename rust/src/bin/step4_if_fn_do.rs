@@ -15,6 +15,8 @@ fn main() {
     let mut env = create_root_env();
     let mut readline = Readline::new();
 
+    rep("(def! not (fn* (a) (if a false true)))", &mut env).unwrap();
+
     loop {
         match readline.readline() {
             None => break,
