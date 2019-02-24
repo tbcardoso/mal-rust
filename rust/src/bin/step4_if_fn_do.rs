@@ -1,3 +1,4 @@
+use malrs::core::ns;
 use malrs::env::Env;
 use malrs::printer::pr_str;
 use malrs::reader::read_str;
@@ -6,8 +7,8 @@ use malrs::types::MalFunction;
 use malrs::types::MalValueType;
 use malrs::types::MalValueType::MalFunc;
 use malrs::types::MalValueType::Nil;
-use malrs::types::MalValueType::{List, Map, Number, RustFunc, Symbol, Vector};
-use malrs::types::{MalError, MalMap, MalResult, MalValue, RustFunction};
+use malrs::types::MalValueType::{List, Map, RustFunc, Symbol, Vector};
+use malrs::types::{MalError, MalMap, MalResult, MalValue};
 use std::iter::once;
 
 fn main() {
@@ -35,62 +36,11 @@ fn main() {
 fn create_root_env() -> Env {
     let mut env = Env::new();
 
-    env.set(
-        "+",
-        MalValue::new(RustFunc(RustFunction(|args| {
-            eval_arithmetic_operation(args, |a, b| a + b)
-        }))),
-    );
-
-    env.set(
-        "-",
-        MalValue::new(RustFunc(RustFunction(|args| {
-            eval_arithmetic_operation(args, |a, b| a - b)
-        }))),
-    );
-
-    env.set(
-        "*",
-        MalValue::new(RustFunc(RustFunction(|args| {
-            eval_arithmetic_operation(args, |a, b| a * b)
-        }))),
-    );
-
-    env.set(
-        "/",
-        MalValue::new(RustFunc(RustFunction(|args| {
-            eval_arithmetic_operation(args, |a, b| a / b)
-        }))),
-    );
-
-    env
-}
-
-fn eval_arithmetic_operation(args: &[MalValue], op: fn(f64, f64) -> f64) -> MalResult {
-    if args.len() != 2 {
-        return Err(MalError::RustFunction(format!(
-            "Expected 2 arguments, got {}",
-            args.len()
-        )));
+    for (name, val) in ns() {
+        env.set(name, val);
     }
 
-    let arg_1 = if let Number(n) = *args[0].mal_type {
-        Ok(n)
-    } else {
-        Err(MalError::RustFunction(
-            "First argument must be a number".to_string(),
-        ))
-    }?;
-
-    let arg_2 = if let Number(n) = *args[1].mal_type {
-        Ok(n)
-    } else {
-        Err(MalError::RustFunction(
-            "Second argument must be a number".to_string(),
-        ))
-    }?;
-
-    Ok(MalValue::new(Number(op(arg_1, arg_2))))
+    env
 }
 
 fn rep(s: &str, env: &mut Env) -> Result<String, MalError> {
