@@ -20,6 +20,14 @@ impl MalValue {
             mal_type: Rc::new(mal_type),
         }
     }
+
+    pub fn is_list(&self) -> bool {
+        if let MalValueType::List(_) = *self.mal_type {
+            true
+        } else {
+            false
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
