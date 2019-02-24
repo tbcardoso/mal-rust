@@ -143,7 +143,7 @@ impl<'a> ExactSizeIterator for MalMapIter<'a> {
 
 impl<'a> FusedIterator for MalMapIter<'a> {}
 
-pub struct RustFunction(pub fn(&[MalValue]) -> MalResult);
+pub struct RustFunction(pub fn(&[MalValue], &mut Env) -> MalResult);
 
 impl fmt::Debug for RustFunction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

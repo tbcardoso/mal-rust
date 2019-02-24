@@ -33,28 +33,28 @@ fn create_root_env() -> Env {
 
     env.set(
         "+",
-        MalValue::new(RustFunc(RustFunction(|args| {
+        MalValue::new(RustFunc(RustFunction(|args, _env| {
             eval_arithmetic_operation(args, |a, b| a + b)
         }))),
     );
 
     env.set(
         "-",
-        MalValue::new(RustFunc(RustFunction(|args| {
+        MalValue::new(RustFunc(RustFunction(|args, _env| {
             eval_arithmetic_operation(args, |a, b| a - b)
         }))),
     );
 
     env.set(
         "*",
-        MalValue::new(RustFunc(RustFunction(|args| {
+        MalValue::new(RustFunc(RustFunction(|args, _env| {
             eval_arithmetic_operation(args, |a, b| a * b)
         }))),
     );
 
     env.set(
         "/",
-        MalValue::new(RustFunc(RustFunction(|args| {
+        MalValue::new(RustFunc(RustFunction(|args, _env| {
             eval_arithmetic_operation(args, |a, b| a / b)
         }))),
     );
@@ -153,7 +153,7 @@ fn apply_ast(ast: &MalValue, env: &mut Env) -> MalResult {
                 .expect("Evaluation of non-empty list resulted in empty list.")
                 .mal_type
             {
-                rust_function.0(&evaluated_list[1..])
+                rust_function.0(&evaluated_list[1..], env)
             } else {
                 Err(MalError::Evaluation(
                     "First element of a list must evaluate to a function.".to_string(),

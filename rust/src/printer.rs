@@ -228,7 +228,7 @@ mod tests {
     fn test_pr_str_rustfunc() {
         assert_eq!(
             pr_str(
-                &MalValue::new(RustFunc(RustFunction(|_| Ok(MalValue::new(Number(0.)))))),
+                &MalValue::new(RustFunc(RustFunction(|_, _| Ok(MalValue::new(Number(0.)))))),
                 true
             ),
             "#<rust_function>"

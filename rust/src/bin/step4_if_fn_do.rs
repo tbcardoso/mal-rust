@@ -109,7 +109,7 @@ fn apply_ast(ast: &MalValue, env: &mut Env) -> MalResult {
             .expect("Evaluation of non-empty list resulted in empty list.")
             .mal_type
         {
-            RustFunc(ref rust_function) => rust_function.0(&evaluated_list[1..]),
+            RustFunc(ref rust_function) => rust_function.0(&evaluated_list[1..], env),
             MalFunc(ref mal_func) => {
                 let mut func_env = Env::with_binds(
                     Some(&mal_func.outer_env),

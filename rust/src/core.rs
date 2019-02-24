@@ -5,25 +5,25 @@ pub fn ns() -> Vec<(&'static str, MalValue)> {
     vec![
         (
             "+",
-            MalValue::new(RustFunc(RustFunction(|args| {
+            MalValue::new(RustFunc(RustFunction(|args, _| {
                 eval_arithmetic_operation(args, |a, b| a + b)
             }))),
         ),
         (
             "-",
-            MalValue::new(RustFunc(RustFunction(|args| {
+            MalValue::new(RustFunc(RustFunction(|args, _| {
                 eval_arithmetic_operation(args, |a, b| a - b)
             }))),
         ),
         (
             "*",
-            MalValue::new(RustFunc(RustFunction(|args| {
+            MalValue::new(RustFunc(RustFunction(|args, _| {
                 eval_arithmetic_operation(args, |a, b| a * b)
             }))),
         ),
         (
             "/",
-            MalValue::new(RustFunc(RustFunction(|args| {
+            MalValue::new(RustFunc(RustFunction(|args, _| {
                 eval_arithmetic_operation(args, |a, b| a / b)
             }))),
         ),
