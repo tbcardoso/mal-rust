@@ -1,4 +1,4 @@
-use crate::types::MalValueType::Nil;
+use crate::types::MalValueType::{List, Nil};
 use crate::types::{MalError, MalResult, MalValue};
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -29,17 +29,36 @@ impl Env {
         create_env(Some(outer))
     }
 
-    pub fn with_binds<S: AsRef<str>>(outer: Option<&Env>, binds: &[S], exprs: &[MalValue]) -> Env {
+    pub fn with_binds<S: AsRef<str>>(
+        outer: Option<&Env>,
+        binds: &[S],
+        exprs: &[MalValue],
+    ) -> Result<Env, MalError> {
         let mut env = create_env(outer);
 
         for (i, bind) in binds.iter().enumerate() {
+            if bind.as_ref() == "&" {
+                if binds.len() <= (i + 1) {
+                    return Err(MalError::Evaluation(
+                        "Error in argument binding: no parameter after '&'".to_string(),
+                    ));
+                }
+
+                env.set(
+                    binds[i + 1].as_ref(),
+                    MalValue::new(List(exprs[i..].to_vec())),
+                );
+
+                break;
+            }
+
             env.set(
                 bind.as_ref(),
                 exprs.get(i).cloned().unwrap_or_else(|| MalValue::new(Nil)),
             )
         }
 
-        env
+        Ok(env)
     }
 
     pub fn set(&mut self, symbol_key: &str, val: MalValue) {
@@ -134,7 +153,7 @@ mod tests {
         let val = MalValue::new(Str("abc".to_string()));
         env1.set("sym", val.clone());
 
-        let env2 = Env::with_binds::<&str>(Some(&env1), &[], &[]);
+        let env2 = Env::with_binds::<&str>(Some(&env1), &[], &[]).unwrap();
 
         assert_eq!(env2.get("sym"), Ok(val));
     }
@@ -146,7 +165,7 @@ mod tests {
         env1.set("sym", val1.clone());
 
         let val2 = MalValue::new(Number(1.));
-        let env2 = Env::with_binds(Some(&env1), &["sym"], &[val2.clone()]);
+        let env2 = Env::with_binds(Some(&env1), &["sym"], &[val2.clone()]).unwrap();
 
         let env3 = Env::with_outer_env(&env1);
 
@@ -163,7 +182,8 @@ mod tests {
             None,
             &["s1".to_string(), "s2".to_string()],
             &[val1.clone(), val2.clone()],
-        );
+        )
+        .unwrap();
 
         assert_eq!(env.get("s1"), Ok(val1));
         assert_eq!(env.get("s2"), Ok(val2));
@@ -179,7 +199,8 @@ mod tests {
             None,
             &["s1", "s2"],
             &[val1.clone(), val2.clone(), val3.clone()],
-        );
+        )
+        .unwrap();
 
         assert_eq!(env.get("s1"), Ok(val1));
         assert_eq!(env.get("s2"), Ok(val2));
@@ -194,11 +215,48 @@ mod tests {
             None,
             &["s1", "s2", "s3", "s4"],
             &[val1.clone(), val2.clone()],
-        );
+        )
+        .unwrap();
 
         assert_eq!(env.get("s1"), Ok(val1));
         assert_eq!(env.get("s2"), Ok(val2));
         assert_eq!(env.get("s3"), Ok(MalValue::new(Nil)));
         assert_eq!(env.get("s4"), Ok(MalValue::new(Nil)));
+    }
+
+    #[test]
+    fn test_with_binds_variadic() {
+        let val1 = MalValue::new(Number(1.));
+        let val2 = MalValue::new(Str("abc".to_string()));
+        let val3 = MalValue::new(Number(2.));
+
+        let env = Env::with_binds(
+            None,
+            &["s1", "&", "v"],
+            &[val1.clone(), val2.clone(), val3.clone()],
+        )
+        .unwrap();
+
+        assert_eq!(env.get("s1"), Ok(val1));
+        assert_eq!(env.get("v"), Ok(MalValue::new(List(vec![val2, val3,]))));
+    }
+
+    #[test]
+    fn test_with_binds_variadic_only() {
+        let val1 = MalValue::new(Number(1.));
+        let val2 = MalValue::new(Str("abc".to_string()));
+        let val3 = MalValue::new(Number(2.));
+
+        let env = Env::with_binds(
+            None,
+            &["&", "v"],
+            &[val1.clone(), val2.clone(), val3.clone()],
+        )
+        .unwrap();
+
+        assert_eq!(
+            env.get("v"),
+            Ok(MalValue::new(List(vec![val1, val2, val3,])))
+        );
     }
 }

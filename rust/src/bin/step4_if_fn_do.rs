@@ -115,7 +115,7 @@ fn apply_ast(ast: &MalValue, env: &mut Env) -> MalResult {
                     Some(&mal_func.outer_env),
                     &mal_func.parameters,
                     &evaluated_list[1..],
-                );
+                )?;
                 eval(&mal_func.body, &mut func_env)
             }
             _ => Err(MalError::Evaluation(
