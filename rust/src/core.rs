@@ -1,5 +1,6 @@
 use crate::env::Env;
-use crate::types::MalValueType::{Number, RustFunc};
+use crate::printer::pr_str;
+use crate::types::MalValueType::{Nil, Number, RustFunc};
 use crate::types::{MalError, MalResult, MalValue, RustFunction};
 
 pub fn ns() -> Vec<(&'static str, MalValue)> {
@@ -8,6 +9,7 @@ pub fn ns() -> Vec<(&'static str, MalValue)> {
         ("-", rust_func(subtract)),
         ("*", rust_func(multiply)),
         ("/", rust_func(divide)),
+        ("prn", rust_func(prn)),
     ]
 }
 
@@ -56,4 +58,12 @@ fn eval_arithmetic_operation(args: &[MalValue], op: fn(f64, f64) -> f64) -> MalR
     }?;
 
     Ok(MalValue::new(Number(op(arg_1, arg_2))))
+}
+
+fn prn(args: &[MalValue], _env: &mut Env) -> MalResult {
+    let strs: Vec<_> = args.iter().map(|arg| pr_str(arg, true)).collect();
+
+    println!("{}", strs.join(" "));
+
+    Ok(MalValue::new(Nil))
 }
