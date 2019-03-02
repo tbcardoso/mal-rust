@@ -10,6 +10,9 @@ pub fn ns() -> Vec<(&'static str, MalValue)> {
         ("*", rust_func(multiply)),
         ("/", rust_func(divide)),
         ("prn", rust_func(prn)),
+        ("println", rust_func(mal_println)),
+        ("pr-str", rust_func(mal_pr_str)),
+        ("str", rust_func(mal_str)),
         ("list", rust_func(list)),
         ("list?", rust_func(is_list)),
         ("empty?", rust_func(empty)),
@@ -162,10 +165,26 @@ fn gte(args: &[MalValue], _env: &mut Env) -> MalResult {
     Ok(MalValue::new_boolean(arg_1 >= arg_2))
 }
 
-fn prn(args: &[MalValue], _env: &mut Env) -> MalResult {
-    let strs: Vec<_> = args.iter().map(|arg| pr_str(arg, true)).collect();
+fn pr_strs(strs: &[MalValue], print_readably: bool) -> Vec<String> {
+    strs.iter().map(|arg| pr_str(arg, print_readably)).collect()
+}
 
-    println!("{}", strs.join(" "));
+fn prn(args: &[MalValue], _env: &mut Env) -> MalResult {
+    println!("{}", pr_strs(args, true).join(" "));
 
     Ok(MalValue::new(Nil))
+}
+
+fn mal_println(args: &[MalValue], _env: &mut Env) -> MalResult {
+    println!("{}", pr_strs(args, false).join(" "));
+
+    Ok(MalValue::new(Nil))
+}
+
+fn mal_pr_str(args: &[MalValue], _env: &mut Env) -> MalResult {
+    Ok(MalValue::new(Str(pr_strs(args, true).join(" "))))
+}
+
+fn mal_str(args: &[MalValue], _env: &mut Env) -> MalResult {
+    Ok(MalValue::new(Str(pr_strs(args, false).join(""))))
 }
