@@ -3,6 +3,8 @@ use crate::printer::pr_str;
 use crate::reader::read_str;
 use crate::types::MalValueType::{False, List, Nil, Number, RustFunc, Str, True, Vector};
 use crate::types::{MalError, MalResult, MalValue, RustFunction};
+use std::error::Error;
+use std::fs;
 
 pub fn ns() -> Vec<(&'static str, MalValue)> {
     vec![
@@ -24,6 +26,7 @@ pub fn ns() -> Vec<(&'static str, MalValue)> {
         (">", rust_func(gt)),
         (">=", rust_func(gte)),
         ("read-string", rust_func(read_string)),
+        ("slurp", rust_func(slurp)),
     ]
 }
 
@@ -200,6 +203,21 @@ fn read_string(args: &[MalValue], _env: &mut Env) -> MalResult {
     } else {
         Err(MalError::RustFunction(
             "read_string expects argument to be of type String".to_string(),
+        ))
+    }
+}
+
+fn slurp(args: &[MalValue], _env: &mut Env) -> MalResult {
+    arg_count_eq(args, 1)?;
+
+    if let Str(ref arg) = *args[0].mal_type {
+        let file_content = fs::read_to_string(arg)
+            .map_err(|e| MalError::RustFunction(format!("slurp: {}", e.description())))?;
+
+        Ok(MalValue::new(Str(file_content)))
+    } else {
+        Err(MalError::RustFunction(
+            "slurp expects argument to be of type String".to_string(),
         ))
     }
 }
