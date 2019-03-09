@@ -1,5 +1,6 @@
 use crate::env::Env;
 use crate::printer::pr_str;
+use crate::reader::read_str;
 use crate::types::MalValueType::{False, List, Nil, Number, RustFunc, Str, True, Vector};
 use crate::types::{MalError, MalResult, MalValue, RustFunction};
 
@@ -22,6 +23,7 @@ pub fn ns() -> Vec<(&'static str, MalValue)> {
         ("<=", rust_func(lte)),
         (">", rust_func(gt)),
         (">=", rust_func(gte)),
+        ("read-string", rust_func(read_string)),
     ]
 }
 
@@ -32,8 +34,9 @@ fn rust_func(func: fn(&[MalValue], &mut Env) -> MalResult) -> MalValue {
 fn arg_count_eq(args: &[MalValue], expected: usize) -> Result<(), MalError> {
     if args.len() != expected {
         return Err(MalError::RustFunction(format!(
-            "Expected {} arguments, got {}",
+            "Expected {} argument{}, got {}",
             expected,
+            if expected == 1 { "" } else { "s" },
             args.len()
         )));
     }
@@ -187,4 +190,16 @@ fn mal_pr_str(args: &[MalValue], _env: &mut Env) -> MalResult {
 
 fn mal_str(args: &[MalValue], _env: &mut Env) -> MalResult {
     Ok(MalValue::new(Str(pr_strs(args, false).join(""))))
+}
+
+fn read_string(args: &[MalValue], _env: &mut Env) -> MalResult {
+    arg_count_eq(args, 1)?;
+
+    if let Str(ref arg) = *args[0].mal_type {
+        read_str(arg)
+    } else {
+        Err(MalError::RustFunction(
+            "read_string expects argument to be of type String".to_string(),
+        ))
+    }
 }
