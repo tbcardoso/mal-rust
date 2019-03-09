@@ -1,0 +1,16 @@
+# See https://pre-commit.com for more information
+repos:
+- repo: local
+  hooks:
+  - id: rustfmt
+    name: rustfmt
+    description: Checks that Rust files are formatted correctly using rustfmt.
+    entry: rustfmt --check --
+    language: system
+    types: [rust]
+  - id: rust-clippy
+    name: clippy
+    description: Catches common mistakes using Rust Clippy.
+    entry: pre-commit-clippy.sh
+    language: script
+    types: [rust]
