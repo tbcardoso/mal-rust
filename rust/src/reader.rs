@@ -280,7 +280,7 @@ mod tests {
 
         match read_str("(h 12") {
             Err(MalError::Parser(_)) => {}
-            _ => assert!(false, "Expected Parser error."),
+            _ => unreachable!("Expected Parser error."),
         }
     }
 
@@ -319,7 +319,7 @@ mod tests {
 
         match read_str("[1 2") {
             Err(MalError::Parser(_)) => {}
-            _ => assert!(false, "Expected Parser error."),
+            _ => unreachable!("Expected Parser error."),
         }
     }
 
@@ -360,12 +360,12 @@ mod tests {
 
         match read_str("{:a 1 :b}") {
             Err(MalError::Parser(_)) => {}
-            _ => assert!(false, "Expected Parser error."),
+            _ => unreachable!("Expected Parser error."),
         }
 
         match read_str("{:a 1") {
             Err(MalError::Parser(_)) => {}
-            _ => assert!(false, "Expected Parser error."),
+            _ => unreachable!("Expected Parser error."),
         }
     }
 
@@ -373,12 +373,12 @@ mod tests {
     fn test_read_str_extra_tokens() {
         match read_str("aa 123") {
             Err(MalError::Parser(_)) => {}
-            _ => assert!(false, "Expected Parser error."),
+            _ => unreachable!("Expected Parser error."),
         }
 
         match read_str("(+ 1 x) (- 123 y)") {
             Err(MalError::Parser(_)) => {}
-            _ => assert!(false, "Expected Parser error."),
+            _ => unreachable!("Expected Parser error."),
         }
     }
 }

@@ -295,12 +295,12 @@ mod tests {
 
         match tokenize(r#""abc"#) {
             Err(MalError::Tokenizer(_)) => {}
-            _ => assert!(false, "Expected Tokenizer error."),
+            _ => unreachable!("Expected Tokenizer error."),
         }
 
         match tokenize(r#""abc\"#) {
             Err(MalError::Tokenizer(_)) => {}
-            _ => assert!(false, "Expected Tokenizer error."),
+            _ => unreachable!("Expected Tokenizer error."),
         }
     }
 
