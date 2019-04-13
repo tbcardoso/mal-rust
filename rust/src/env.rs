@@ -65,7 +65,7 @@ impl Env {
         self.0.data.borrow_mut().insert(symbol_key.to_string(), val);
     }
 
-    fn find(&self, symbol_key: &str) -> Option<Env> {
+    pub fn find(&self, symbol_key: &str) -> Option<Env> {
         if self.0.data.borrow().contains_key(symbol_key) {
             Some(self.clone())
         } else {
