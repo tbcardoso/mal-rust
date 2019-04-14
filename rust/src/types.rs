@@ -29,6 +29,10 @@ impl MalValue {
         }
     }
 
+    pub fn new_rust_func(func: fn(&[MalValue], &mut Env) -> MalResult) -> MalValue {
+        MalValue::new(MalValueType::RustFunc(RustFunction(func)))
+    }
+
     pub fn is_list(&self) -> bool {
         if let MalValueType::List(_) = *self.mal_type {
             true

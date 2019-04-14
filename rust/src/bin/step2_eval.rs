@@ -3,7 +3,7 @@ use malrs::printer::pr_str;
 use malrs::reader::read_str;
 use malrs::readline::Readline;
 use malrs::types::MalValueType::{List, Map, Number, RustFunc, Symbol, Vector};
-use malrs::types::{MalError, MalMap, MalResult, MalValue, RustFunction};
+use malrs::types::{MalError, MalMap, MalResult, MalValue};
 use std::iter::once;
 
 fn main() {
@@ -33,30 +33,22 @@ fn create_env() -> Env {
 
     env.set(
         "+",
-        MalValue::new(RustFunc(RustFunction(|args, _env| {
-            eval_arithmetic_operation(args, |a, b| a + b)
-        }))),
+        MalValue::new_rust_func(|args, _env| eval_arithmetic_operation(args, |a, b| a + b)),
     );
 
     env.set(
         "-",
-        MalValue::new(RustFunc(RustFunction(|args, _env| {
-            eval_arithmetic_operation(args, |a, b| a - b)
-        }))),
+        MalValue::new_rust_func(|args, _env| eval_arithmetic_operation(args, |a, b| a - b)),
     );
 
     env.set(
         "*",
-        MalValue::new(RustFunc(RustFunction(|args, _env| {
-            eval_arithmetic_operation(args, |a, b| a * b)
-        }))),
+        MalValue::new_rust_func(|args, _env| eval_arithmetic_operation(args, |a, b| a * b)),
     );
 
     env.set(
         "/",
-        MalValue::new(RustFunc(RustFunction(|args, _env| {
-            eval_arithmetic_operation(args, |a, b| a / b)
-        }))),
+        MalValue::new_rust_func(|args, _env| eval_arithmetic_operation(args, |a, b| a / b)),
     );
 
     env

@@ -64,7 +64,6 @@ mod tests {
     use crate::env::Env;
     use crate::types::MalFunction;
     use crate::types::MalMap;
-    use crate::types::RustFunction;
 
     #[test]
     fn test_pr_str_nil() {
@@ -228,7 +227,7 @@ mod tests {
     fn test_pr_str_rustfunc() {
         assert_eq!(
             pr_str(
-                &MalValue::new(RustFunc(RustFunction(|_, _| Ok(MalValue::new(Number(0.)))))),
+                &MalValue::new_rust_func(|_, _| Ok(MalValue::new(Number(0.)))),
                 true
             ),
             "#<rust_function>"

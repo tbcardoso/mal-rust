@@ -1,37 +1,33 @@
 use crate::env::Env;
 use crate::printer::pr_str;
 use crate::reader::read_str;
-use crate::types::MalValueType::{False, List, Nil, Number, RustFunc, Str, True, Vector};
-use crate::types::{MalError, MalResult, MalValue, RustFunction};
+use crate::types::MalValueType::{False, List, Nil, Number, Str, True, Vector};
+use crate::types::{MalError, MalResult, MalValue};
 use std::error::Error;
 use std::fs;
 
 pub fn ns() -> Vec<(&'static str, MalValue)> {
     vec![
-        ("+", rust_func(add)),
-        ("-", rust_func(subtract)),
-        ("*", rust_func(multiply)),
-        ("/", rust_func(divide)),
-        ("prn", rust_func(prn)),
-        ("println", rust_func(mal_println)),
-        ("pr-str", rust_func(mal_pr_str)),
-        ("str", rust_func(mal_str)),
-        ("list", rust_func(list)),
-        ("list?", rust_func(is_list)),
-        ("empty?", rust_func(empty)),
-        ("count", rust_func(count)),
-        ("=", rust_func(equals)),
-        ("<", rust_func(lt)),
-        ("<=", rust_func(lte)),
-        (">", rust_func(gt)),
-        (">=", rust_func(gte)),
-        ("read-string", rust_func(read_string)),
-        ("slurp", rust_func(slurp)),
+        ("+", MalValue::new_rust_func(add)),
+        ("-", MalValue::new_rust_func(subtract)),
+        ("*", MalValue::new_rust_func(multiply)),
+        ("/", MalValue::new_rust_func(divide)),
+        ("prn", MalValue::new_rust_func(prn)),
+        ("println", MalValue::new_rust_func(mal_println)),
+        ("pr-str", MalValue::new_rust_func(mal_pr_str)),
+        ("str", MalValue::new_rust_func(mal_str)),
+        ("list", MalValue::new_rust_func(list)),
+        ("list?", MalValue::new_rust_func(is_list)),
+        ("empty?", MalValue::new_rust_func(empty)),
+        ("count", MalValue::new_rust_func(count)),
+        ("=", MalValue::new_rust_func(equals)),
+        ("<", MalValue::new_rust_func(lt)),
+        ("<=", MalValue::new_rust_func(lte)),
+        (">", MalValue::new_rust_func(gt)),
+        (">=", MalValue::new_rust_func(gte)),
+        ("read-string", MalValue::new_rust_func(read_string)),
+        ("slurp", MalValue::new_rust_func(slurp)),
     ]
-}
-
-fn rust_func(func: fn(&[MalValue], &mut Env) -> MalResult) -> MalValue {
-    MalValue::new(RustFunc(RustFunction(func)))
 }
 
 fn arg_count_eq(args: &[MalValue], expected: usize) -> Result<(), MalError> {
