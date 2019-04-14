@@ -1,4 +1,4 @@
-use crate::types::MalValueType::{List, Nil};
+use crate::types::MalValueType::List;
 use crate::types::{MalError, MalResult, MalValue};
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -54,7 +54,7 @@ impl Env {
 
             env.set(
                 bind.as_ref(),
-                exprs.get(i).cloned().unwrap_or_else(|| MalValue::new(Nil)),
+                exprs.get(i).cloned().unwrap_or_else(MalValue::nil),
             )
         }
 
@@ -92,7 +92,7 @@ impl Default for Env {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::types::MalValueType::{Nil, Number, Str};
+    use crate::types::MalValueType::{Number, Str};
 
     fn undefined_symbol_err(symbol_key: &str) -> MalResult {
         Err(MalError::UndefinedSymbol(symbol_key.to_string()))
@@ -220,8 +220,8 @@ mod tests {
 
         assert_eq!(env.get("s1"), Ok(val1));
         assert_eq!(env.get("s2"), Ok(val2));
-        assert_eq!(env.get("s3"), Ok(MalValue::new(Nil)));
-        assert_eq!(env.get("s4"), Ok(MalValue::new(Nil)));
+        assert_eq!(env.get("s3"), Ok(MalValue::nil()));
+        assert_eq!(env.get("s4"), Ok(MalValue::nil()));
     }
 
     #[test]

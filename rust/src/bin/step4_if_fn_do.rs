@@ -232,7 +232,7 @@ fn apply_special_form_fn(args: &[MalValue], env: &Env) -> MalResult {
 }
 
 fn apply_special_form_do(args: &[MalValue], env: &mut Env) -> MalResult {
-    let mut last = MalValue::new(Nil);
+    let mut last = MalValue::nil();
 
     for expr in args.iter() {
         last = eval(expr, env)?;
@@ -256,7 +256,7 @@ fn apply_special_form_if(args: &[MalValue], env: &mut Env) -> MalResult {
             if args.len() == 3 {
                 eval(&args[2], env)
             } else {
-                Ok(MalValue::new(Nil))
+                Ok(MalValue::nil())
             }
         }
         _ => eval(&args[1], env),

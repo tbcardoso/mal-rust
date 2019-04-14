@@ -33,6 +33,10 @@ impl MalValue {
         MalValue::new(MalValueType::RustFunc(RustFunction(func)))
     }
 
+    pub fn nil() -> MalValue {
+        MalValue::new(MalValueType::Nil)
+    }
+
     pub fn is_list(&self) -> bool {
         if let MalValueType::List(_) = *self.mal_type {
             true

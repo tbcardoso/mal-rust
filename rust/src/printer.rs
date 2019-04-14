@@ -67,7 +67,7 @@ mod tests {
 
     #[test]
     fn test_pr_str_nil() {
-        assert_eq!(pr_str(&MalValue::new(Nil), true), "nil");
+        assert_eq!(pr_str(&MalValue::nil(), true), "nil");
     }
 
     #[test]
@@ -239,7 +239,7 @@ mod tests {
         assert_eq!(
             pr_str(
                 &MalValue::new(MalFunc(MalFunction {
-                    body: MalValue::new(Nil),
+                    body: MalValue::nil(),
                     parameters: Vec::new(),
                     outer_env: Env::new(),
                 })),

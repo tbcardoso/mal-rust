@@ -174,13 +174,13 @@ fn pr_strs(strs: &[MalValue], print_readably: bool) -> Vec<String> {
 fn prn(args: &[MalValue], _env: &mut Env) -> MalResult {
     println!("{}", pr_strs(args, true).join(" "));
 
-    Ok(MalValue::new(Nil))
+    Ok(MalValue::nil())
 }
 
 fn mal_println(args: &[MalValue], _env: &mut Env) -> MalResult {
     println!("{}", pr_strs(args, false).join(" "));
 
-    Ok(MalValue::new(Nil))
+    Ok(MalValue::nil())
 }
 
 fn mal_pr_str(args: &[MalValue], _env: &mut Env) -> MalResult {

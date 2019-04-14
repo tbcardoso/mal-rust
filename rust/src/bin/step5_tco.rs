@@ -262,7 +262,7 @@ fn apply_special_form_fn(args: &[MalValue], env: &Env) -> ApplyResult {
 
 fn apply_special_form_do(args: &[MalValue], env: &mut Env) -> ApplyResult {
     if args.is_empty() {
-        return Ok(Return(MalValue::new(Nil)));
+        return Ok(Return(MalValue::nil()));
     }
 
     for expr in args[..args.len() - 1].iter() {
@@ -287,7 +287,7 @@ fn apply_special_form_if(args: &[MalValue], env: &mut Env) -> ApplyResult {
             if args.len() == 3 {
                 Ok(TailCall(args[2].clone(), env.clone()))
             } else {
-                Ok(Return(MalValue::new(Nil)))
+                Ok(Return(MalValue::nil()))
             }
         }
         _ => Ok(TailCall(args[1].clone(), env.clone())),
