@@ -19,6 +19,11 @@ fn main() {
     let mut readline = Readline::new();
 
     rep("(def! not (fn* (a) (if a false true)))", &mut env).unwrap();
+    rep(
+        r#"(def! load-file (fn* (f) (eval (read-string (str "(do " (slurp f) ")")))))"#,
+        &mut env,
+    )
+    .unwrap();
 
     loop {
         match readline.readline() {
