@@ -1,7 +1,7 @@
 use crate::env::Env;
 use crate::printer::pr_str;
 use crate::reader::read_str;
-use crate::types::MalValueType::{False, List, Nil, Number, Str, True, Vector};
+use crate::types::MalValueType::{Atom, False, List, Nil, Number, Str, True, Vector};
 use crate::types::{MalError, MalResult, MalValue};
 use std::error::Error;
 use std::fs;
@@ -27,6 +27,10 @@ pub fn ns() -> Vec<(&'static str, MalValue)> {
         (">=", MalValue::new_rust_func(gte)),
         ("read-string", MalValue::new_rust_func(read_string)),
         ("slurp", MalValue::new_rust_func(slurp)),
+        ("atom", MalValue::new_rust_func(atom)),
+        ("atom?", MalValue::new_rust_func(is_atom)),
+        ("deref", MalValue::new_rust_func(deref_atom)),
+        ("reset!", MalValue::new_rust_func(reset_atom)),
     ]
 }
 
@@ -214,6 +218,43 @@ fn slurp(args: &[MalValue], _env: &mut Env) -> MalResult {
     } else {
         Err(MalError::RustFunction(
             "slurp expects argument to be of type String".to_string(),
+        ))
+    }
+}
+
+fn atom(args: &[MalValue], _env: &mut Env) -> MalResult {
+    arg_count_eq(args, 1)?;
+
+    Ok(MalValue::new_atom(args[0].clone()))
+}
+
+fn is_atom(args: &[MalValue], _env: &mut Env) -> MalResult {
+    arg_count_eq(args, 1)?;
+
+    Ok(MalValue::new_boolean(args[0].is_atom()))
+}
+
+fn deref_atom(args: &[MalValue], _env: &mut Env) -> MalResult {
+    arg_count_eq(args, 1)?;
+
+    if let Atom(ref val) = *args[0].mal_type {
+        Ok(val.borrow().clone())
+    } else {
+        Err(MalError::RustFunction(
+            "Invalid argument. Expected atom.".to_string(),
+        ))
+    }
+}
+
+fn reset_atom(args: &[MalValue], _env: &mut Env) -> MalResult {
+    arg_count_eq(args, 2)?;
+
+    if let Atom(ref val) = *args[0].mal_type {
+        val.replace(args[1].clone());
+        Ok(args[1].clone())
+    } else {
+        Err(MalError::RustFunction(
+            "Invalid argument. Expected atom.".to_string(),
         ))
     }
 }

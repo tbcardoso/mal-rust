@@ -23,6 +23,7 @@ pub fn pr_str(mal_value: &MalValue, print_readably: bool) -> String {
         Map(ref mal_map) => pr_map(mal_map, print_readably),
         RustFunc(_) => "#<rust_function>".to_string(),
         MalFunc(_) => "#<function>".to_string(),
+        Atom(ref val) => format!("(atom {})", pr_str(&(*val.borrow()), print_readably)),
     }
 }
 
@@ -180,7 +181,7 @@ mod tests {
                     MalValue::new(Number(456.)),
                     MalValue::new(Symbol("y".to_string())),
                 ])),
-                true
+                true,
             ),
             "(+ 456 y)"
         );
@@ -196,7 +197,7 @@ mod tests {
                     MalValue::new(Number(456.)),
                     MalValue::new(Symbol("y".to_string())),
                 ])),
-                true
+                true,
             ),
             "[x 456 y]"
         );
@@ -217,7 +218,7 @@ mod tests {
                     .unwrap())),
                 ])
                 .unwrap())),
-                true
+                true,
             ),
             "{:a {\"b\" 12}}"
         );
@@ -228,7 +229,7 @@ mod tests {
         assert_eq!(
             pr_str(
                 &MalValue::new_rust_func(|_, _| Ok(MalValue::new(Number(0.)))),
-                true
+                true,
             ),
             "#<rust_function>"
         );
@@ -243,9 +244,17 @@ mod tests {
                     parameters: Vec::new(),
                     outer_env: Env::new(),
                 })),
-                true
+                true,
             ),
             "#<function>"
         );
+    }
+
+    #[test]
+    fn test_pr_str_atom() {
+        assert_eq!(
+            pr_str(&MalValue::new_atom(MalValue::new(Number(123.))), true),
+            "(atom 123)"
+        )
     }
 }

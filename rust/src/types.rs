@@ -1,5 +1,6 @@
 use crate::env::Env;
 use crate::types::MalError::*;
+use std::cell::RefCell;
 use std::collections::hash_map;
 use std::collections::HashMap;
 use std::fmt;
@@ -33,12 +34,24 @@ impl MalValue {
         MalValue::new(MalValueType::RustFunc(RustFunction(func)))
     }
 
+    pub fn new_atom(value: MalValue) -> MalValue {
+        MalValue::new(MalValueType::Atom(RefCell::new(value)))
+    }
+
     pub fn nil() -> MalValue {
         MalValue::new(MalValueType::Nil)
     }
 
     pub fn is_list(&self) -> bool {
         if let MalValueType::List(_) = *self.mal_type {
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn is_atom(&self) -> bool {
+        if let MalValueType::Atom(_) = *self.mal_type {
             true
         } else {
             false
@@ -60,6 +73,7 @@ pub enum MalValueType {
     Map(MalMap),
     RustFunc(RustFunction),
     MalFunc(MalFunction),
+    Atom(RefCell<MalValue>),
 }
 
 impl PartialEq for MalValueType {
