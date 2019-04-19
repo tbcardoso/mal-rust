@@ -6,15 +6,43 @@ use malrs::reader::read_str;
 use malrs::readline::Readline;
 use malrs::types::MalFunction;
 use malrs::types::MalValueType;
-use malrs::types::MalValueType::MalFunc;
 use malrs::types::MalValueType::Nil;
 use malrs::types::MalValueType::{List, Map, RustFunc, Symbol, Vector};
+use malrs::types::MalValueType::{MalFunc, Str};
 use malrs::types::{MalError, MalMap, MalResult, MalValue};
 use std::iter::once;
+use std::{env, process};
 
 fn main() {
-    let mut env = create_root_env();
-    let mut readline = Readline::new();
+    let env_args: Vec<String> = env::args().collect();
+
+    let mut env = create_root_env(&env_args);
+
+    if env_args.len() > 1 {
+        run_file(env_args[1].as_str(), &mut env);
+    } else {
+        run_repl(&mut env);
+    }
+}
+
+fn create_root_env(args: &[String]) -> Env {
+    let mut env = Env::new();
+
+    core::set_eval_func(eval);
+
+    env.set(
+        "*ARGV*",
+        MalValue::new(List(
+            args.iter()
+                .skip(2)
+                .map(|arg| MalValue::new(Str(arg.clone())))
+                .collect(),
+        )),
+    );
+
+    for (name, val) in core::ns(&env) {
+        env.set(name, val);
+    }
 
     rep("(def! not (fn* (a) (if a false true)))", &mut env).unwrap();
     rep(
@@ -23,12 +51,30 @@ fn main() {
     )
     .unwrap();
 
+    env
+}
+
+fn run_file(file_path: &str, env: &mut Env) -> ! {
+    match rep(format!(r#"(load-file "{}")"#, file_path).as_str(), env) {
+        Ok(_) => {
+            process::exit(0);
+        }
+        Err(mal_error) => {
+            eprintln!("Error! {}", mal_error);
+            process::exit(1);
+        }
+    }
+}
+
+fn run_repl(env: &mut Env) {
+    let mut readline = Readline::new();
+
     loop {
         match readline.readline() {
             None => break,
             Some(line) => {
                 if !line.is_empty() {
-                    match rep(&line, &mut env) {
+                    match rep(&line, env) {
                         Ok(result) => println!("{}", result),
                         Err(MalError::EmptyProgram) => {}
                         Err(mal_error) => println!("Error! {}", mal_error),
@@ -39,17 +85,6 @@ fn main() {
     }
 
     readline.save_history();
-}
-
-fn create_root_env() -> Env {
-    let mut env = Env::new();
-
-    core::set_eval_func(eval);
-    for (name, val) in core::ns(&env) {
-        env.set(name, val);
-    }
-
-    env
 }
 
 fn rep(s: &str, env: &mut Env) -> Result<String, MalError> {
@@ -310,43 +345,43 @@ mod tests {
 
     #[test]
     fn test_empty_program() {
-        let mut env = create_root_env();
+        let mut env = create_root_env(&[]);
         assert_eq!(rep("", &mut env), Err(EmptyProgram));
     }
 
     #[test]
     fn test_empty_list() {
-        let mut env = create_root_env();
+        let mut env = create_root_env(&[]);
         assert_eq!(rep("()", &mut env), Ok("()".to_string()));
     }
 
     #[test]
     fn test_empty_vector() {
-        let mut env = create_root_env();
+        let mut env = create_root_env(&[]);
         assert_eq!(rep("[]", &mut env), Ok("[]".to_string()));
     }
 
     #[test]
     fn test_empty_map() {
-        let mut env = create_root_env();
+        let mut env = create_root_env(&[]);
         assert_eq!(rep("{}", &mut env), Ok("{}".to_string()));
     }
 
     #[test]
     fn test_nested_arithmetic() {
-        let mut env = create_root_env();
+        let mut env = create_root_env(&[]);
         assert_eq!(rep("(+ 2 (* 3 4))", &mut env), Ok("14".to_string()));
     }
 
     #[test]
     fn test_vector_eval() {
-        let mut env = create_root_env();
+        let mut env = create_root_env(&[]);
         assert_eq!(rep("[1 2 (+ 1 2)]", &mut env), Ok("[1 2 3]".to_string()));
     }
 
     #[test]
     fn test_map_eval() {
-        let mut env = create_root_env();
+        let mut env = create_root_env(&[]);
         assert_eq!(
             rep("{:a {:b (* 3 2)}}", &mut env),
             Ok("{:a {:b 6}}".to_string())
@@ -355,7 +390,7 @@ mod tests {
 
     #[test]
     fn test_special_form_def() {
-        let mut env = create_root_env();
+        let mut env = create_root_env(&[]);
         assert_eq!(
             rep("(def! str1 \"abc\")", &mut env),
             Ok("\"abc\"".to_string())
@@ -365,14 +400,14 @@ mod tests {
 
     #[test]
     fn test_special_form_def_evaluates_2nd_par() {
-        let mut env = create_root_env();
+        let mut env = create_root_env(&[]);
         assert_eq!(rep("(def! x (- 5 3))", &mut env), Ok("2".to_string()));
         assert_eq!(rep("x", &mut env), Ok("2".to_string()));
     }
 
     #[test]
     fn test_special_form_def_symbol_to_symbol() {
-        let mut env = create_root_env();
+        let mut env = create_root_env(&[]);
         assert_eq!(rep("(def! x 1)", &mut env), Ok("1".to_string()));
         assert_eq!(rep("(def! y x)", &mut env), Ok("1".to_string()));
         assert_eq!(rep("x", &mut env), Ok("1".to_string()));
@@ -381,13 +416,13 @@ mod tests {
 
     #[test]
     fn test_special_form_let() {
-        let mut env = create_root_env();
+        let mut env = create_root_env(&[]);
         assert_eq!(rep("(let* (c 2) (+ 3 c))", &mut env), Ok("5".to_string()));
     }
 
     #[test]
     fn test_special_form_let_multiple_bindings() {
-        let mut env = create_root_env();
+        let mut env = create_root_env(&[]);
         assert_eq!(
             rep("(let* (a 2 b (+ a a) c (- b a)) (+ (* a b) c))", &mut env),
             Ok("10".to_string())
@@ -396,13 +431,13 @@ mod tests {
 
     #[test]
     fn test_special_form_let_empty_bindings() {
-        let mut env = create_root_env();
+        let mut env = create_root_env(&[]);
         assert_eq!(rep("(let* () 123)", &mut env), Ok("123".to_string()));
     }
 
     #[test]
     fn test_special_form_let_vector_bindings() {
-        let mut env = create_root_env();
+        let mut env = create_root_env(&[]);
         assert_eq!(
             rep("(let* [a 2 b (+ a 1)] [a b (+ a b)])", &mut env),
             Ok("[2 3 5]".to_string())
@@ -411,7 +446,7 @@ mod tests {
 
     #[test]
     fn test_special_form_fn() {
-        let mut env = create_root_env();
+        let mut env = create_root_env(&[]);
         assert_eq!(
             rep("(fn* [a b] (+ a b))", &mut env),
             Ok("#<function>".to_string())
@@ -420,7 +455,7 @@ mod tests {
 
     #[test]
     fn test_special_form_fn_eval() {
-        let mut env = create_root_env();
+        let mut env = create_root_env(&[]);
         assert_eq!(
             rep("((fn* [a b] (+ a b)) 2 3)", &mut env),
             Ok("5".to_string())
@@ -429,19 +464,19 @@ mod tests {
 
     #[test]
     fn test_special_form_do() {
-        let mut env = create_root_env();
+        let mut env = create_root_env(&[]);
         assert_eq!(rep("(do 1 :s2 3 :s4)", &mut env), Ok(":s4".to_string()));
     }
 
     #[test]
     fn test_special_form_do_empty() {
-        let mut env = create_root_env();
+        let mut env = create_root_env(&[]);
         assert_eq!(rep("(do)", &mut env), Ok("nil".to_string()));
     }
 
     #[test]
     fn test_special_form_if() {
-        let mut env = create_root_env();
+        let mut env = create_root_env(&[]);
         assert_eq!(rep("(if true 1 2)", &mut env), Ok("1".to_string()));
         assert_eq!(rep("(if true 2)", &mut env), Ok("2".to_string()));
         assert_eq!(rep("(if false 1 2)", &mut env), Ok("2".to_string()));
@@ -451,7 +486,7 @@ mod tests {
 
     #[test]
     fn test_function_eval() {
-        let mut env = create_root_env();
+        let mut env = create_root_env(&[]);
         assert_eq!(
             rep(r#"(eval (read-string "(+ 1 2)"))"#, &mut env),
             Ok("3".to_string())
@@ -460,7 +495,7 @@ mod tests {
 
     #[test]
     fn test_function_eval_uses_repl_env() {
-        let mut env = create_root_env();
+        let mut env = create_root_env(&[]);
         assert_eq!(rep(r#"(def! a 1)"#, &mut env), Ok("1".to_string()));
 
         // Function does not change top-level symbol `a`
