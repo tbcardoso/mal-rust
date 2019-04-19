@@ -1,5 +1,6 @@
 use crate::types::MalValueType::List;
 use crate::types::{MalError, MalResult, MalValue};
+use core::fmt;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -7,10 +8,19 @@ use std::rc::Rc;
 #[derive(Debug, Clone, PartialEq)]
 pub struct Env(Rc<EnvImpl>);
 
-#[derive(Debug, PartialEq)]
+#[derive(PartialEq)]
 struct EnvImpl {
     data: RefCell<HashMap<String, MalValue>>,
     outer: Option<Env>,
+}
+
+impl fmt::Debug for EnvImpl {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("EnvImpl")
+            .field("data", &"RefCell<HashMap<String, MalValue>>")
+            .field("outer", &self.outer)
+            .finish()
+    }
 }
 
 fn create_env(outer: Option<&Env>) -> Env {
