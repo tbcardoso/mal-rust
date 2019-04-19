@@ -39,7 +39,7 @@ fn main() {
 fn create_root_env() -> Env {
     let mut env = Env::new();
 
-    for (name, val) in ns() {
+    for (name, val) in ns(&env) {
         env.set(name, val);
     }
 
@@ -142,7 +142,10 @@ fn apply_ast(ast: &MalValue, env: &mut Env) -> ApplyResult {
             .expect("Evaluation of non-empty list resulted in empty list.")
             .mal_type
         {
-            RustFunc(ref rust_function) => Ok(Return(rust_function.0(&evaluated_list[1..], env)?)),
+            RustFunc(ref rust_function) => Ok(Return((rust_function.func)(
+                &evaluated_list[1..],
+                &mut rust_function.env.clone(),
+            )?)),
             MalFunc(ref mal_func) => {
                 let func_env = Env::with_binds(
                     Some(&mal_func.outer_env),

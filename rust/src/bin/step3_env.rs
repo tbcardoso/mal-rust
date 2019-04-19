@@ -33,22 +33,34 @@ fn create_root_env() -> Env {
 
     env.set(
         "+",
-        MalValue::new_rust_func(|args, _env| eval_arithmetic_operation(args, |a, b| a + b)),
+        MalValue::new_rust_func(
+            |args, _env| eval_arithmetic_operation(args, |a, b| a + b),
+            &env,
+        ),
     );
 
     env.set(
         "-",
-        MalValue::new_rust_func(|args, _env| eval_arithmetic_operation(args, |a, b| a - b)),
+        MalValue::new_rust_func(
+            |args, _env| eval_arithmetic_operation(args, |a, b| a - b),
+            &env,
+        ),
     );
 
     env.set(
         "*",
-        MalValue::new_rust_func(|args, _env| eval_arithmetic_operation(args, |a, b| a * b)),
+        MalValue::new_rust_func(
+            |args, _env| eval_arithmetic_operation(args, |a, b| a * b),
+            &env,
+        ),
     );
 
     env.set(
         "/",
-        MalValue::new_rust_func(|args, _env| eval_arithmetic_operation(args, |a, b| a / b)),
+        MalValue::new_rust_func(
+            |args, _env| eval_arithmetic_operation(args, |a, b| a / b),
+            &env,
+        ),
     );
 
     env
@@ -145,7 +157,7 @@ fn apply_ast(ast: &MalValue, env: &mut Env) -> MalResult {
                 .expect("Evaluation of non-empty list resulted in empty list.")
                 .mal_type
             {
-                rust_function.0(&evaluated_list[1..], env)
+                (rust_function.func)(&evaluated_list[1..], &mut rust_function.env.clone())
             } else {
                 Err(MalError::Evaluation(
                     "First element of a list must evaluate to a function.".to_string(),

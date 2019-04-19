@@ -30,8 +30,11 @@ impl MalValue {
         }
     }
 
-    pub fn new_rust_func(func: fn(&[MalValue], &mut Env) -> MalResult) -> MalValue {
-        MalValue::new(MalValueType::RustFunc(RustFunction(func)))
+    pub fn new_rust_func(func: fn(&[MalValue], &mut Env) -> MalResult, env: &Env) -> MalValue {
+        MalValue::new(MalValueType::RustFunc(RustFunction {
+            func,
+            env: env.clone(),
+        }))
     }
 
     pub fn new_atom(value: MalValue) -> MalValue {
@@ -205,19 +208,23 @@ impl<'a> ExactSizeIterator for MalMapIter<'a> {
 
 impl<'a> FusedIterator for MalMapIter<'a> {}
 
-pub struct RustFunction(pub fn(&[MalValue], &mut Env) -> MalResult);
+pub struct RustFunction {
+    pub func: fn(&[MalValue], &mut Env) -> MalResult,
+    pub env: Env,
+}
 
 impl fmt::Debug for RustFunction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.debug_tuple("RustFunction")
-            .field(&(self.0 as usize))
+        f.debug_struct("RustFunction")
+            .field("func", &(self.func as usize))
+            .field("env", &self.env)
             .finish()
     }
 }
 
 impl PartialEq for RustFunction {
     fn eq(&self, other: &RustFunction) -> bool {
-        self.0 as usize == other.0 as usize
+        (self.func as usize == other.func as usize) && (self.env == other.env)
     }
 }
 
