@@ -293,6 +293,7 @@ pub enum MalTokenType {
     RCurly,
     LBracket,
     RBracket,
+    AtSign,
     Nil,
     True,
     False,

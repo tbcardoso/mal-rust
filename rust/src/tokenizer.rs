@@ -35,6 +35,7 @@ fn scan_token(text: &str) -> Result<Option<MalTokenType>, MalError> {
         '}' => Ok(Some(RCurly)),
         ']' => Ok(Some(RBracket)),
         '[' => Ok(Some(LBracket)),
+        '@' => Ok(Some(AtSign)),
         ';' => Ok(None),
         '"' => Ok(Some(Str(scan_string(text)?))),
         ':' => Ok(Some(scan_keyword(text))),
@@ -192,6 +193,19 @@ mod tests {
                 MalToken::new(RBracket),
                 MalToken::new(RBracket),
                 MalToken::new(RBracket),
+            ])
+        );
+    }
+
+    #[test]
+    fn test_tokenize_at_sign() {
+        assert_eq!(tokenize("@"), Ok(vec![MalToken::new(AtSign)]));
+        assert_eq!(
+            tokenize("@@ @"),
+            Ok(vec![
+                MalToken::new(AtSign),
+                MalToken::new(AtSign),
+                MalToken::new(AtSign)
             ])
         );
     }

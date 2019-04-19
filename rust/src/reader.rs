@@ -53,6 +53,7 @@ fn read_form(reader: &mut Reader) -> MalResult {
         MalTokenType::LParen => read_list(reader),
         MalTokenType::LBracket => read_vector(reader),
         MalTokenType::LCurly => read_map(reader),
+        MalTokenType::AtSign => read_deref(reader),
         _ => read_atom(reader),
     }
 }
@@ -114,6 +115,15 @@ fn read_atom(reader: &mut Reader) -> MalResult {
         MalTokenType::Keyword(ref val) => Ok(MalValue::new(Keyword(val.clone()))),
         _ => Err(Parser("Unexpected token".to_string())),
     }
+}
+
+fn read_deref(reader: &mut Reader) -> MalResult {
+    reader.next().unwrap();
+
+    Ok(MalValue::new(List(vec![
+        MalValue::new(Symbol("deref".to_string())),
+        read_form(reader)?,
+    ])))
 }
 
 #[cfg(test)]
@@ -377,6 +387,22 @@ mod tests {
         }
 
         match read_str("(+ 1 x) (- 123 y)") {
+            Err(MalError::Parser(_)) => {}
+            _ => unreachable!("Expected Parser error."),
+        }
+    }
+
+    #[test]
+    fn test_read_str_deref() {
+        assert_eq!(
+            read_str("@a"),
+            Ok(MalValue::new(List(vec![
+                MalValue::new(Symbol("deref".to_string())),
+                MalValue::new(Symbol("a".to_string())),
+            ])))
+        );
+
+        match read_str("@") {
             Err(MalError::Parser(_)) => {}
             _ => unreachable!("Expected Parser error."),
         }
