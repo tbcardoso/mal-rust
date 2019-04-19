@@ -32,6 +32,7 @@ pub fn ns(env: &Env) -> Vec<(&'static str, MalValue)> {
         ("atom?", MalValue::new_rust_func(is_atom, env)),
         ("deref", MalValue::new_rust_func(deref_atom, env)),
         ("reset!", MalValue::new_rust_func(reset_atom, env)),
+        ("swap!", MalValue::new_rust_func(swap_atom, env)),
     ]
 }
 
@@ -51,12 +52,33 @@ fn core_eval(ast: &MalValue, env: &mut Env) -> MalResult {
     unsafe { EVAL_FUNC(ast, env) }
 }
 
+fn core_apply(function: &MalValue, args: &[MalValue], env: &mut Env) -> MalResult {
+    let mut vec = Vec::with_capacity(args.len() + 1);
+    vec.push(function.clone());
+    vec.extend_from_slice(args);
+
+    core_eval(&MalValue::new(List(vec)), env)
+}
+
 fn arg_count_eq(args: &[MalValue], expected: usize) -> Result<(), MalError> {
     if args.len() != expected {
         return Err(MalError::RustFunction(format!(
             "Expected {} argument{}, got {}",
             expected,
             if expected == 1 { "" } else { "s" },
+            args.len()
+        )));
+    }
+
+    Ok(())
+}
+
+fn arg_count_gte(args: &[MalValue], min_args: usize) -> Result<(), MalError> {
+    if args.len() < min_args {
+        return Err(MalError::RustFunction(format!(
+            "Expected at least {} argument{}, got {}",
+            min_args,
+            if min_args == 1 { "" } else { "s" },
             args.len()
         )));
     }
@@ -280,4 +302,31 @@ fn reset_atom(args: &[MalValue], _env: &mut Env) -> MalResult {
             "Invalid argument. Expected atom.".to_string(),
         ))
     }
+}
+
+fn swap_atom(args: &[MalValue], env: &mut Env) -> MalResult {
+    arg_count_gte(args, 2)?;
+
+    let atom = if let Atom(ref val) = *args[0].mal_type {
+        val
+    } else {
+        return Err(MalError::RustFunction(
+            "Invalid 1st argument. Expected atom.".to_string(),
+        ));
+    };
+
+    if !args[1].is_function() {
+        return Err(MalError::RustFunction(
+            "Invalid 2nd argument. Expected function.".to_string(),
+        ));
+    }
+
+    let mut apply_args = Vec::with_capacity(args.len() - 1);
+    apply_args.push(atom.borrow().clone());
+    apply_args.extend_from_slice(&args[2..]);
+
+    let result = core_apply(&args[1], &apply_args, env)?;
+
+    atom.replace(result.clone());
+    Ok(result)
 }

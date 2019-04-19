@@ -53,6 +53,13 @@ impl MalValue {
         }
     }
 
+    pub fn is_function(&self) -> bool {
+        match *self.mal_type {
+            MalValueType::RustFunc(_) | MalValueType::MalFunc(_) => true,
+            _ => false,
+        }
+    }
+
     pub fn is_atom(&self) -> bool {
         if let MalValueType::Atom(_) = *self.mal_type {
             true
