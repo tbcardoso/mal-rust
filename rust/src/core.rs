@@ -27,11 +27,28 @@ pub fn ns(env: &Env) -> Vec<(&'static str, MalValue)> {
         (">=", MalValue::new_rust_func(gte, env)),
         ("read-string", MalValue::new_rust_func(read_string, env)),
         ("slurp", MalValue::new_rust_func(slurp, env)),
+        ("eval", MalValue::new_rust_func(mal_eval, env)),
         ("atom", MalValue::new_rust_func(atom, env)),
         ("atom?", MalValue::new_rust_func(is_atom, env)),
         ("deref", MalValue::new_rust_func(deref_atom, env)),
         ("reset!", MalValue::new_rust_func(reset_atom, env)),
     ]
+}
+
+static mut EVAL_FUNC: fn(ast: &MalValue, env: &mut Env) -> MalResult = dummy_eval;
+
+fn dummy_eval(_: &MalValue, _: &mut Env) -> MalResult {
+    panic!("core EVAL_FUNC was not set. You must call core::set_eval_func().")
+}
+
+pub fn set_eval_func(func: fn(ast: &MalValue, env: &mut Env) -> MalResult) {
+    unsafe {
+        EVAL_FUNC = func;
+    }
+}
+
+fn core_eval(ast: &MalValue, env: &mut Env) -> MalResult {
+    unsafe { EVAL_FUNC(ast, env) }
 }
 
 fn arg_count_eq(args: &[MalValue], expected: usize) -> Result<(), MalError> {
@@ -220,6 +237,12 @@ fn slurp(args: &[MalValue], _env: &mut Env) -> MalResult {
             "slurp expects argument to be of type String".to_string(),
         ))
     }
+}
+
+fn mal_eval(args: &[MalValue], env: &mut Env) -> MalResult {
+    arg_count_eq(args, 1)?;
+
+    core_eval(&args[0], env)
 }
 
 fn atom(args: &[MalValue], _env: &mut Env) -> MalResult {

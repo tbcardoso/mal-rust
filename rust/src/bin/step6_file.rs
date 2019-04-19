@@ -12,8 +12,6 @@ use malrs::types::MalValueType::{List, Map, RustFunc, Symbol, Vector};
 use malrs::types::{MalError, MalMap, MalResult, MalValue};
 use std::iter::once;
 
-const REPL_ENV_KEY: &str = "__REPL_ENV";
-
 fn main() {
     let mut env = create_root_env();
     let mut readline = Readline::new();
@@ -46,8 +44,7 @@ fn main() {
 fn create_root_env() -> Env {
     let mut env = Env::new();
 
-    env.set(REPL_ENV_KEY, MalValue::nil());
-
+    core::set_eval_func(eval);
     for (name, val) in core::ns(&env) {
         env.set(name, val);
     }
@@ -101,9 +98,6 @@ fn eval(ast: &MalValue, env: &mut Env) -> MalResult {
                     }
                     Symbol(ref name) if name == "if" => {
                         apply_special_form_if(&list[1..], &mut cur_env)
-                    }
-                    Symbol(ref name) if name == "eval" => {
-                        apply_special_form_eval(&list[1..], &mut cur_env)
                     }
                     _ => apply_ast(&cur_ast, &mut cur_env),
                 }?;
@@ -309,19 +303,6 @@ fn apply_special_form_if(args: &[MalValue], env: &mut Env) -> ApplyResult {
     }
 }
 
-fn apply_special_form_eval(args: &[MalValue], env: &mut Env) -> ApplyResult {
-    if args.len() != 1 {
-        return Err(MalError::SpecialForm(format!(
-            "fn* expected 2 arguments, got {}",
-            args.len()
-        )));
-    }
-
-    let val = eval(&args[0], env)?;
-
-    Ok(TailCall(val, env.find(REPL_ENV_KEY).unwrap().clone()))
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -469,7 +450,7 @@ mod tests {
     }
 
     #[test]
-    fn test_special_form_eval() {
+    fn test_function_eval() {
         let mut env = create_root_env();
         assert_eq!(
             rep(r#"(eval (read-string "(+ 1 2)"))"#, &mut env),
@@ -478,7 +459,7 @@ mod tests {
     }
 
     #[test]
-    fn test_special_form_eval_uses_repl_env() {
+    fn test_function_eval_uses_repl_env() {
         let mut env = create_root_env();
         assert_eq!(rep(r#"(def! a 1)"#, &mut env), Ok("1".to_string()));
 
