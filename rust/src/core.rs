@@ -19,6 +19,7 @@ pub fn ns(env: &Env) -> Vec<(&'static str, MalValue)> {
         ("list", MalValue::new_rust_func(list, env)),
         ("list?", MalValue::new_rust_func(is_list, env)),
         ("cons", MalValue::new_rust_func(cons, env)),
+        ("concat", MalValue::new_rust_func(concat, env)),
         ("empty?", MalValue::new_rust_func(empty, env)),
         ("count", MalValue::new_rust_func(count, env)),
         ("=", MalValue::new_rust_func(equals, env)),
@@ -149,6 +150,21 @@ fn cons(args: &[MalValue], _env: &mut Env) -> MalResult {
         }
         _ => Err(MalError::RustFunction("Invalid 2nd argument".to_string())),
     }
+}
+
+fn concat(args: &[MalValue], _env: &mut Env) -> MalResult {
+    let mut reult_vec = Vec::new();
+
+    for arg in args {
+        match *arg.mal_type {
+            List(ref vec) | Vector(ref vec) => {
+                reult_vec.extend_from_slice(vec);
+            }
+            _ => Err(MalError::RustFunction("Invalid argument".to_string()))?,
+        }
+    }
+
+    Ok(MalValue::new(List(reult_vec)))
 }
 
 fn empty(args: &[MalValue], _env: &mut Env) -> MalResult {
