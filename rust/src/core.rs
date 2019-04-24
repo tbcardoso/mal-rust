@@ -18,6 +18,7 @@ pub fn ns(env: &Env) -> Vec<(&'static str, MalValue)> {
         ("str", MalValue::new_rust_func(mal_str, env)),
         ("list", MalValue::new_rust_func(list, env)),
         ("list?", MalValue::new_rust_func(is_list, env)),
+        ("cons", MalValue::new_rust_func(cons, env)),
         ("empty?", MalValue::new_rust_func(empty, env)),
         ("count", MalValue::new_rust_func(count, env)),
         ("=", MalValue::new_rust_func(equals, env)),
@@ -132,6 +133,21 @@ fn is_list(args: &[MalValue], _env: &mut Env) -> MalResult {
         Ok(MalValue::new(True))
     } else {
         Ok(MalValue::new(False))
+    }
+}
+
+fn cons(args: &[MalValue], _env: &mut Env) -> MalResult {
+    arg_count_eq(args, 2)?;
+
+    match *args[1].mal_type {
+        List(ref vec) | Vector(ref vec) => {
+            let mut new_vec = Vec::with_capacity(vec.len() + 1);
+            new_vec.push(args[0].clone());
+            new_vec.extend_from_slice(vec);
+
+            Ok(MalValue::new(List(new_vec)))
+        }
+        _ => Err(MalError::RustFunction("Invalid 2nd argument".to_string())),
     }
 }
 
