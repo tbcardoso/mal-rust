@@ -134,6 +134,9 @@ fn eval(ast: &MalValue, env: &mut Env) -> MalResult {
                     Symbol(ref name) if name == "if" => {
                         apply_special_form_if(&list[1..], &mut cur_env)
                     }
+                    Symbol(ref name) if name == "quote" => {
+                        apply_special_form_quote(&list[1..], &mut cur_env)
+                    }
                     _ => apply_ast(&cur_ast, &mut cur_env),
                 }?;
 
@@ -338,6 +341,17 @@ fn apply_special_form_if(args: &[MalValue], env: &mut Env) -> ApplyResult {
     }
 }
 
+fn apply_special_form_quote(args: &[MalValue], _env: &mut Env) -> ApplyResult {
+    if args.len() != 1 {
+        return Err(MalError::SpecialForm(format!(
+            "quote expects 1 argument, got {}",
+            args.len()
+        )));
+    }
+
+    Ok(Return(args[0].clone()))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -515,5 +529,16 @@ mod tests {
         );
 
         assert_eq!(rep("a", &mut env), Ok("3".to_string()));
+    }
+
+    #[test]
+    fn test_special_form_quote() {
+        let mut env = create_root_env(&[]);
+        assert_eq!(rep("(quote 1)", &mut env), Ok("1".to_string()));
+        assert_eq!(rep("(quote (1 2 3))", &mut env), Ok("(1 2 3)".to_string()));
+        assert_eq!(
+            rep("(quote (+ 1 (2 3)))", &mut env),
+            Ok("(+ 1 (2 3))".to_string())
+        );
     }
 }
