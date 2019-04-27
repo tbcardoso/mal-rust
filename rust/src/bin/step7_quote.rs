@@ -534,8 +534,9 @@ mod tests {
     #[test]
     fn test_special_form_quote() {
         let mut env = create_root_env(&[]);
-        assert_eq!(rep("(quote 1)", &mut env), Ok("1".to_string()));
-        assert_eq!(rep("(quote (1 2 3))", &mut env), Ok("(1 2 3)".to_string()));
+        assert_eq!(rep("(quote ())", &mut env), Ok("()".to_string()));
+        assert_eq!(rep("(quote a)", &mut env), Ok("a".to_string()));
+        assert_eq!(rep("(quote (1 2 a))", &mut env), Ok("(1 2 a)".to_string()));
         assert_eq!(
             rep("(quote (+ 1 (2 3)))", &mut env),
             Ok("(+ 1 (2 3))".to_string())
