@@ -53,7 +53,11 @@ fn read_form(reader: &mut Reader) -> MalResult {
         MalTokenType::LParen => read_list(reader),
         MalTokenType::LBracket => read_vector(reader),
         MalTokenType::LCurly => read_map(reader),
-        MalTokenType::AtSign => read_deref(reader),
+        MalTokenType::AtSign => read_short_form(reader, "deref"),
+        MalTokenType::SingleQuote => read_short_form(reader, "quote"),
+        MalTokenType::BackTick => read_short_form(reader, "quasiquote"),
+        MalTokenType::Tilde => read_short_form(reader, "unquote"),
+        MalTokenType::TildeAtSign => read_short_form(reader, "splice-unquote"),
         _ => read_atom(reader),
     }
 }
@@ -117,11 +121,11 @@ fn read_atom(reader: &mut Reader) -> MalResult {
     }
 }
 
-fn read_deref(reader: &mut Reader) -> MalResult {
+fn read_short_form(reader: &mut Reader, name: &str) -> MalResult {
     reader.next().unwrap();
 
     Ok(MalValue::new(List(vec![
-        MalValue::new(Symbol("deref".to_string())),
+        MalValue::new(Symbol(name.to_string())),
         read_form(reader)?,
     ])))
 }
@@ -403,6 +407,70 @@ mod tests {
         );
 
         match read_str("@") {
+            Err(MalError::Parser(_)) => {}
+            _ => unreachable!("Expected Parser error."),
+        }
+    }
+
+    #[test]
+    fn test_read_str_quote() {
+        assert_eq!(
+            read_str("'a"),
+            Ok(MalValue::new(List(vec![
+                MalValue::new(Symbol("quote".to_string())),
+                MalValue::new(Symbol("a".to_string())),
+            ])))
+        );
+
+        match read_str("'") {
+            Err(MalError::Parser(_)) => {}
+            _ => unreachable!("Expected Parser error."),
+        }
+    }
+
+    #[test]
+    fn test_read_str_quasiquote() {
+        assert_eq!(
+            read_str("`a"),
+            Ok(MalValue::new(List(vec![
+                MalValue::new(Symbol("quasiquote".to_string())),
+                MalValue::new(Symbol("a".to_string())),
+            ])))
+        );
+
+        match read_str("`") {
+            Err(MalError::Parser(_)) => {}
+            _ => unreachable!("Expected Parser error."),
+        }
+    }
+
+    #[test]
+    fn test_read_str_unquote() {
+        assert_eq!(
+            read_str("~a"),
+            Ok(MalValue::new(List(vec![
+                MalValue::new(Symbol("unquote".to_string())),
+                MalValue::new(Symbol("a".to_string())),
+            ])))
+        );
+
+        match read_str("~") {
+            Err(MalError::Parser(_)) => {}
+            _ => unreachable!("Expected Parser error."),
+        }
+    }
+
+    #[test]
+    fn test_read_str_splice_unquote() {
+        assert_eq!(
+            read_str("~@a"),
+            Ok(MalValue::new(List(vec![
+                MalValue::new(Symbol("splice-unquote".to_string())),
+                MalValue::new(Symbol("a".to_string())),
+            ])))
+        );
+
+        match read_str("~@") {
             Err(MalError::Parser(_)) => {}
             _ => unreachable!("Expected Parser error."),
         }
