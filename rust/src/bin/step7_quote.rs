@@ -137,6 +137,9 @@ fn eval(ast: &MalValue, env: &mut Env) -> MalResult {
                     Symbol(ref name) if name == "quote" => {
                         apply_special_form_quote(&list[1..], &mut cur_env)
                     }
+                    Symbol(ref name) if name == "quasiquote" => {
+                        apply_special_form_quasiquote(&list[1..], &mut cur_env)
+                    }
                     _ => apply_ast(&cur_ast, &mut cur_env),
                 }?;
 
@@ -352,6 +355,71 @@ fn apply_special_form_quote(args: &[MalValue], _env: &mut Env) -> ApplyResult {
     Ok(Return(args[0].clone()))
 }
 
+fn apply_special_form_quasiquote(args: &[MalValue], env: &mut Env) -> ApplyResult {
+    if args.len() != 1 {
+        return Err(MalError::SpecialForm(format!(
+            "quasiquote expects 1 argument, got {}",
+            args.len()
+        )));
+    }
+
+    Ok(TailCall(quasiquote(&args[0])?, env.clone()))
+}
+
+fn quasiquote(ast: &MalValue) -> MalResult {
+    match *ast.mal_type {
+        MalValueType::List(ref vec) | MalValueType::Vector(ref vec) if !vec.is_empty() => {
+            let elem0 = &vec[0];
+            match *elem0.mal_type {
+                Symbol(ref s) if s == "unquote" => {
+                    if vec.len() != 2 {
+                        Err(MalError::SpecialForm(format!(
+                            "unquote expects 1 argument, got {}",
+                            vec.len() - 1
+                        )))
+                    } else {
+                        Ok(vec[1].clone())
+                    }
+                }
+                MalValueType::List(ref inner_vec) | MalValueType::Vector(ref inner_vec)
+                    if !inner_vec.is_empty() =>
+                {
+                    match *inner_vec[0].mal_type {
+                        Symbol(ref s) if s == "splice-unquote" => {
+                            if inner_vec.len() != 2 {
+                                Err(MalError::SpecialForm(format!(
+                                    "splice-unquote expects 1 argument, got {}",
+                                    inner_vec.len() - 1
+                                )))
+                            } else {
+                                Ok(MalValue::new(List(vec![
+                                    MalValue::new(Symbol("concat".to_string())),
+                                    inner_vec[1].clone(),
+                                    quasiquote(&MalValue::new(List(vec[1..].to_vec())))?,
+                                ])))
+                            }
+                        }
+                        _ => Ok(MalValue::new(List(vec![
+                            MalValue::new(Symbol("cons".to_string())),
+                            quasiquote(elem0)?,
+                            quasiquote(&MalValue::new(List(vec[1..].to_vec())))?,
+                        ]))),
+                    }
+                }
+                _ => Ok(MalValue::new(List(vec![
+                    MalValue::new(Symbol("cons".to_string())),
+                    quasiquote(elem0)?,
+                    quasiquote(&MalValue::new(List(vec[1..].to_vec())))?,
+                ]))),
+            }
+        }
+        _ => Ok(MalValue::new(List(vec![
+            MalValue::new(Symbol("quote".to_string())),
+            ast.clone(),
+        ]))),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -540,6 +608,29 @@ mod tests {
         assert_eq!(
             rep("(quote (+ 1 (2 3)))", &mut env),
             Ok("(+ 1 (2 3))".to_string())
+        );
+    }
+
+    #[test]
+    fn test_special_form_quasiquote() {
+        let mut env = create_root_env(&[]);
+        assert_eq!(rep("(quasiquote ())", &mut env), Ok("()".to_string()));
+        assert_eq!(rep("(quasiquote a)", &mut env), Ok("a".to_string()));
+        assert_eq!(
+            rep("(quasiquote (1 a (3 b)))", &mut env),
+            Ok("(1 a (3 b))".to_string())
+        );
+        assert_eq!(
+            rep("(quasiquote (1 a (unquote (+ 1 2))))", &mut env),
+            Ok("(1 a 3)".to_string())
+        );
+        assert_eq!(
+            rep("(quasiquote (1 a (unquote (list 3 4))))", &mut env),
+            Ok("(1 a (3 4))".to_string())
+        );
+        assert_eq!(
+            rep("(quasiquote (1 a (splice-unquote (list 3 4)) b))", &mut env),
+            Ok("(1 a 3 4 b)".to_string())
         );
     }
 }
