@@ -4,11 +4,8 @@ use malrs::env::Env;
 use malrs::printer::pr_str;
 use malrs::reader::read_str;
 use malrs::readline::Readline;
-use malrs::types::MalFunction;
 use malrs::types::MalValueType;
-use malrs::types::MalValueType::Nil;
-use malrs::types::MalValueType::{List, Map, RustFunc, Symbol, Vector};
-use malrs::types::MalValueType::{MalFunc, Str};
+use malrs::types::MalValueType::{List, MalFunc, Map, Nil, RustFunc, Str, Symbol, Vector};
 use malrs::types::{MalError, MalMap, MalResult, MalValue};
 use std::iter::once;
 use std::{env, process};
@@ -297,11 +294,11 @@ fn apply_special_form_fn(args: &[MalValue], env: &Env) -> ApplyResult {
         })
         .collect();
 
-    Ok(Return(MalValue::new(MalFunc(MalFunction {
-        body: args[1].clone(),
-        parameters: parameters?,
-        outer_env: env.clone(),
-    }))))
+    Ok(Return(MalValue::new_mal_func(
+        args[1].clone(),
+        parameters?,
+        env.clone(),
+    )))
 }
 
 fn apply_special_form_do(args: &[MalValue], env: &mut Env) -> ApplyResult {

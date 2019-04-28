@@ -63,7 +63,6 @@ fn pr_map(mal_map: &MalMap, print_readably: bool) -> String {
 mod tests {
     use super::*;
     use crate::env::Env;
-    use crate::types::MalFunction;
     use crate::types::MalMap;
 
     #[test]
@@ -239,12 +238,8 @@ mod tests {
     fn test_pr_str_malfunc() {
         assert_eq!(
             pr_str(
-                &MalValue::new(MalFunc(MalFunction {
-                    body: MalValue::nil(),
-                    parameters: Vec::new(),
-                    outer_env: Env::new(),
-                })),
-                true,
+                &MalValue::new_mal_func(MalValue::nil(), Vec::new(), Env::new()),
+                true
             ),
             "#<function>"
         );

@@ -37,6 +37,14 @@ impl MalValue {
         }))
     }
 
+    pub fn new_mal_func(body: MalValue, parameters: Vec<String>, outer_env: Env) -> MalValue {
+        MalValue::new(MalValueType::MalFunc(MalFunction {
+            body,
+            parameters,
+            outer_env,
+        }))
+    }
+
     pub fn new_atom(value: MalValue) -> MalValue {
         MalValue::new(MalValueType::Atom(RefCell::new(value)))
     }
