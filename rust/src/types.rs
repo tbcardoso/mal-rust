@@ -42,6 +42,16 @@ impl MalValue {
             body,
             parameters,
             outer_env,
+            is_macro: false,
+        }))
+    }
+
+    pub fn new_mal_macro(body: MalValue, parameters: Vec<String>, outer_env: Env) -> MalValue {
+        MalValue::new(MalValueType::MalFunc(MalFunction {
+            body,
+            parameters,
+            outer_env,
+            is_macro: true,
         }))
     }
 
@@ -248,6 +258,7 @@ pub struct MalFunction {
     pub body: MalValue,
     pub parameters: Vec<String>,
     pub outer_env: Env,
+    pub is_macro: bool,
 }
 
 #[derive(Debug, PartialEq)]

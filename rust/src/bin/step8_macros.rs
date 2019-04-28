@@ -137,6 +137,9 @@ fn eval(ast: &MalValue, env: &mut Env) -> MalResult {
                     Symbol(ref name) if name == "quasiquote" => {
                         apply_special_form_quasiquote(&list[1..], &mut cur_env)
                     }
+                    Symbol(ref name) if name == "defmacro!" => {
+                        apply_special_form_defmacro(&list[1..], &mut cur_env)
+                    }
                     _ => apply_ast(&cur_ast, &mut cur_env),
                 }?;
 
@@ -415,6 +418,41 @@ fn quasiquote(ast: &MalValue) -> MalResult {
             ast.clone(),
         ]))),
     }
+}
+
+fn apply_special_form_defmacro(args: &[MalValue], env: &mut Env) -> ApplyResult {
+    if args.len() != 2 {
+        return Err(MalError::SpecialForm(format!(
+            "defmacro! expected 2 arguments, got {}",
+            args.len()
+        )));
+    }
+
+    let arg1 = if let Symbol(ref symbol) = *args[0].mal_type {
+        Ok(symbol)
+    } else {
+        Err(MalError::SpecialForm(
+            "defmacro! first argument must be a valid symbol name".to_string(),
+        ))
+    }?;
+
+    let arg2 = eval(&args[1], env)?;
+
+    let macro_val = if let MalFunc(ref mal_function) = *arg2.mal_type {
+        MalValue::new_mal_macro(
+            mal_function.body.clone(),
+            mal_function.parameters.clone(),
+            mal_function.outer_env.clone(),
+        )
+    } else {
+        Err(MalError::SpecialForm(
+            "defmacro! second argument must evaluate to a function".to_string(),
+        ))?
+    };
+
+    env.set(arg1.as_str(), macro_val.clone());
+
+    Ok(Return(macro_val))
 }
 
 #[cfg(test)]
