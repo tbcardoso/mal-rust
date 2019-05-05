@@ -110,6 +110,8 @@ fn eval(ast: &MalValue, env: &mut Env) -> MalResult {
     let mut cur_env = env.clone();
 
     loop {
+        cur_ast = macroexpand(&cur_ast, env)?;
+
         match *cur_ast.mal_type {
             List(ref list) if list.is_empty() => return Ok(cur_ast.clone()),
             List(ref list) => {
@@ -210,6 +212,45 @@ fn apply_ast(ast: &MalValue, env: &mut Env) -> ApplyResult {
             evaluated_list_ast
         ),
     }
+}
+
+fn get_macro_function(ast: &MalValue, env: &Env) -> Option<MalValue> {
+    if let List(ref vec) = *ast.mal_type {
+        let first = vec.get(0)?;
+
+        if let Symbol(ref symbol) = *first.mal_type {
+            let val = env.get(symbol).ok()?;
+
+            if let MalFunc(ref function) = *val.mal_type {
+                if function.is_macro {
+                    return Some(val);
+                }
+            }
+        }
+    }
+
+    None
+}
+
+fn macroexpand(ast: &MalValue, env: &mut Env) -> MalResult {
+    let mut ast: MalValue = ast.clone();
+
+    while let Some(ref macro_val) = get_macro_function(&ast, env) {
+        if let MalFunc(ref function) = *macro_val.mal_type {
+            if let List(ref vec) | Vector(ref vec) = *ast.mal_type {
+                let mut macro_env =
+                    Env::with_binds(Some(&function.outer_env), &function.parameters, &vec[1..])?;
+
+                ast = eval(&function.body, &mut macro_env)?;
+            } else {
+                unreachable!()
+            }
+        } else {
+            unreachable!()
+        }
+    }
+
+    Ok(ast.clone())
 }
 
 fn apply_special_form_def(args: &[MalValue], env: &mut Env) -> ApplyResult {
@@ -667,5 +708,29 @@ mod tests {
             rep("(quasiquote (1 a (splice-unquote (list 3 4)) b))", &mut env),
             Ok("(1 a 3 4 b)".to_string())
         );
+    }
+
+    #[test]
+    fn test_macros_simple() {
+        let mut env = create_root_env(&[]);
+        assert_eq!(
+            rep("(defmacro! get42 (fn* () 42))", &mut env),
+            Ok("#<function>".to_string())
+        );
+        assert_eq!(rep("(get42)", &mut env), Ok("42".to_string()));
+    }
+
+    #[test]
+    fn test_macros() {
+        let mut env = create_root_env(&[]);
+        assert_eq!(
+            rep(
+                "(defmacro! unless (fn* (pred a b) `(if ~pred ~b ~a)))",
+                &mut env
+            ),
+            Ok("#<function>".to_string())
+        );
+        assert_eq!(rep("(unless true 1 2)", &mut env), Ok("2".to_string()));
+        assert_eq!(rep("(unless false 1 2)", &mut env), Ok("1".to_string()));
     }
 }
