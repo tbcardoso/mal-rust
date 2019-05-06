@@ -142,6 +142,9 @@ fn eval(ast: &MalValue, env: &mut Env) -> MalResult {
                     Symbol(ref name) if name == "defmacro!" => {
                         apply_special_form_defmacro(&list[1..], &mut cur_env)
                     }
+                    Symbol(ref name) if name == "macroexpand" => {
+                        apply_special_form_macroexpand(&list[1..], &mut cur_env)
+                    }
                     _ => apply_ast(&cur_ast, &mut cur_env),
                 }?;
 
@@ -496,6 +499,19 @@ fn apply_special_form_defmacro(args: &[MalValue], env: &mut Env) -> ApplyResult 
     Ok(Return(macro_val))
 }
 
+fn apply_special_form_macroexpand(args: &[MalValue], env: &mut Env) -> ApplyResult {
+    if args.len() != 1 {
+        return Err(MalError::SpecialForm(format!(
+            "macroexpand expected 1 arguments, got {}",
+            args.len()
+        )));
+    }
+
+    let expanded = macroexpand(&args[0], env)?;
+
+    Ok(Return(expanded))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -732,5 +748,29 @@ mod tests {
         );
         assert_eq!(rep("(unless true 1 2)", &mut env), Ok("2".to_string()));
         assert_eq!(rep("(unless false 1 2)", &mut env), Ok("1".to_string()));
+    }
+
+    #[test]
+    fn test_special_form_macroexpand() {
+        let mut env = create_root_env(&[]);
+
+        assert_eq!(
+            rep("(defmacro! get42 (fn* () 42))", &mut env),
+            Ok("#<function>".to_string())
+        );
+        assert_eq!(rep("(macroexpand (get42))", &mut env), Ok("42".to_string()));
+
+        assert_eq!(
+            rep(
+                "(defmacro! unless (fn* (pred a b) `(if ~pred ~b ~a)))",
+                &mut env
+            ),
+            Ok("#<function>".to_string())
+        );
+
+        assert_eq!(
+            rep("(macroexpand (unless true 1 2))", &mut env),
+            Ok("(if true 2 1)".to_string())
+        );
     }
 }
