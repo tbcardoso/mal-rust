@@ -22,6 +22,9 @@ pub fn ns(env: &Env) -> Vec<(&'static str, MalValue)> {
         ("concat", MalValue::new_rust_func(concat, env)),
         ("empty?", MalValue::new_rust_func(empty, env)),
         ("count", MalValue::new_rust_func(count, env)),
+        ("nth", MalValue::new_rust_func(nth, env)),
+        ("first", MalValue::new_rust_func(first, env)),
+        ("rest", MalValue::new_rust_func(rest, env)),
         ("=", MalValue::new_rust_func(equals, env)),
         ("<", MalValue::new_rust_func(lt, env)),
         ("<=", MalValue::new_rust_func(lte, env)),
@@ -196,6 +199,44 @@ fn count(args: &[MalValue], _env: &mut Env) -> MalResult {
         List(ref vec) | Vector(ref vec) => Ok(MalValue::new(Number(vec.len() as f64))),
         Str(ref s) => Ok(MalValue::new(Number(s.len() as f64))),
         Nil => Ok(MalValue::new(Number(0.))),
+        _ => Err(MalError::RustFunction("Invalid argument".to_string())),
+    }
+}
+
+fn nth(args: &[MalValue], _env: &mut Env) -> MalResult {
+    arg_count_eq(args, 2)?;
+
+    let index = get_number_arg(&args[1])?;
+
+    if let List(ref vec) | Vector(ref vec) = *args[0].mal_type {
+        vec.get(index as usize)
+            .cloned()
+            .ok_or_else(|| MalError::RustFunction("nth: index out of range".to_string()))
+    } else {
+        Err(MalError::RustFunction("Invalid argument".to_string()))
+    }
+}
+
+fn first(args: &[MalValue], _env: &mut Env) -> MalResult {
+    arg_count_eq(args, 1)?;
+
+    match *args[0].mal_type {
+        List(ref vec) | Vector(ref vec) => Ok(vec.get(0).cloned().unwrap_or_else(MalValue::nil)),
+        Nil => Ok(MalValue::nil()),
+        _ => Err(MalError::RustFunction("Invalid argument".to_string())),
+    }
+}
+
+fn rest(args: &[MalValue], _env: &mut Env) -> MalResult {
+    arg_count_eq(args, 1)?;
+
+    match *args[0].mal_type {
+        List(ref vec) | Vector(ref vec) => Ok(if vec.is_empty() {
+            MalValue::new(List(Vec::new()))
+        } else {
+            MalValue::new(List(Vec::from(&vec[1..])))
+        }),
+        Nil => Ok(MalValue::new(List(Vec::new()))),
         _ => Err(MalError::RustFunction("Invalid argument".to_string())),
     }
 }
