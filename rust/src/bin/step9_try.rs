@@ -155,6 +155,9 @@ fn eval(ast: &MalValue, env: &mut Env) -> MalResult {
                     Symbol(ref name) if name == "macroexpand" => {
                         apply_special_form_macroexpand(&list[1..], &mut cur_env)
                     }
+                    Symbol(ref name) if name == "try*" => {
+                        apply_special_form_try(&list[1..], &mut cur_env)
+                    }
                     _ => apply_ast(&cur_ast, &mut cur_env),
                 }?;
 
@@ -522,6 +525,70 @@ fn apply_special_form_macroexpand(args: &[MalValue], env: &mut Env) -> ApplyResu
     Ok(Return(expanded))
 }
 
+fn apply_special_form_try(args: &[MalValue], env: &mut Env) -> ApplyResult {
+    if args.len() != 2 {
+        return Err(MalError::SpecialForm(format!(
+            "try* expected 2 arguments, got {}",
+            args.len()
+        )));
+    }
+
+    let exception_symbol;
+    let catch_expression;
+
+    if let List(ref catch_vec) = *args[1].mal_type {
+        if catch_vec.is_empty() {
+            return Err(MalError::SpecialForm(
+                "try* second argument must be a non-empty list".to_string(),
+            ));
+        }
+
+        match *catch_vec[0].mal_type {
+            Symbol(ref s) if s == "catch*" => {}
+            _ => {
+                return Err(MalError::SpecialForm(
+                    "try* second argument must start with symbol 'catch*'".to_string(),
+                ));
+            }
+        }
+
+        if catch_vec.len() != 3 {
+            return Err(MalError::SpecialForm(format!(
+                "catch* expected 2 arguments, got {}",
+                catch_vec.len() - 1
+            )));
+        }
+
+        exception_symbol = if let Symbol(ref s) = *catch_vec[1].mal_type {
+            s
+        } else {
+            return Err(MalError::SpecialForm(
+                "catch* first argument must be a symbol".to_string(),
+            ));
+        };
+
+        catch_expression = &catch_vec[2];
+    } else {
+        return Err(MalError::SpecialForm(
+            "try* second argument must be a non-empty list".to_string(),
+        ));
+    }
+
+    let try_result = eval(&args[0], env);
+
+    if try_result.is_ok() {
+        return Ok(Return(try_result.unwrap()));
+    }
+
+    let mut catch_env = Env::with_outer_env(env);
+    catch_env.set(
+        exception_symbol,
+        MalValue::new(Str(try_result.err().unwrap().to_string())),
+    );
+
+    Ok(Return(eval(catch_expression, &mut catch_env)?))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -781,6 +848,21 @@ mod tests {
         assert_eq!(
             rep("(macroexpand (unless true 1 2))", &mut env),
             Ok("(if true 2 1)".to_string())
+        );
+    }
+
+    #[test]
+    fn test_special_form_try() {
+        let mut env = create_root_env(&[]);
+
+        assert_eq!(
+            rep(r#"(try* "abc" (catch* e e))"#, &mut env),
+            Ok(r#""abc""#.to_string())
+        );
+
+        assert_eq!(
+            rep(r#"(try* (nth (list 1 2) 5) (catch* e 123))"#, &mut env),
+            Ok("123".to_string())
         );
     }
 }
