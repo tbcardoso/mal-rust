@@ -580,11 +580,16 @@ fn apply_special_form_try(args: &[MalValue], env: &mut Env) -> ApplyResult {
         return Ok(Return(try_result.unwrap()));
     }
 
+    let mal_error = try_result.err().unwrap();
+
+    let exception = if let MalError::Exception(ref exception_val) = mal_error {
+        exception_val.clone()
+    } else {
+        MalValue::new(Str(mal_error.to_string()))
+    };
+
     let mut catch_env = Env::with_outer_env(env);
-    catch_env.set(
-        exception_symbol,
-        MalValue::new(Str(try_result.err().unwrap().to_string())),
-    );
+    catch_env.set(exception_symbol, exception);
 
     Ok(Return(eval(catch_expression, &mut catch_env)?))
 }
@@ -863,6 +868,16 @@ mod tests {
         assert_eq!(
             rep(r#"(try* (nth (list 1 2) 5) (catch* e 123))"#, &mut env),
             Ok("123".to_string())
+        );
+
+        assert_eq!(
+            rep(r#"(try* (throw "exception!!") (catch* e e))"#, &mut env),
+            Ok(r#""exception!!""#.to_string())
+        );
+
+        assert_eq!(
+            rep(r#"(try* (throw 12345) (catch* e e))"#, &mut env),
+            Ok("12345".to_string())
         );
     }
 }

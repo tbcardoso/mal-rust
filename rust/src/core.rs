@@ -38,6 +38,7 @@ pub fn ns(env: &Env) -> Vec<(&'static str, MalValue)> {
         ("deref", MalValue::new_rust_func(deref_atom, env)),
         ("reset!", MalValue::new_rust_func(reset_atom, env)),
         ("swap!", MalValue::new_rust_func(swap_atom, env)),
+        ("throw", MalValue::new_rust_func(throw, env)),
     ]
 }
 
@@ -402,4 +403,10 @@ fn swap_atom(args: &[MalValue], env: &mut Env) -> MalResult {
 
     atom.replace(result.clone());
     Ok(result)
+}
+
+fn throw(args: &[MalValue], _env: &mut Env) -> MalResult {
+    arg_count_gte(args, 1)?;
+
+    Err(MalError::Exception(args[0].clone()))
 }

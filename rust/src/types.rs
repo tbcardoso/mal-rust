@@ -1,4 +1,5 @@
 use crate::env::Env;
+use crate::printer::pr_str;
 use crate::types::MalError::*;
 use std::cell::RefCell;
 use std::collections::hash_map;
@@ -270,6 +271,7 @@ pub enum MalError {
     Evaluation(String),
     RustFunction(String),
     SpecialForm(String),
+    Exception(MalValue),
 }
 
 impl fmt::Display for MalError {
@@ -286,6 +288,7 @@ impl fmt::Display for MalError {
             MalError::SpecialForm(message) => {
                 write!(f, "Error when evaluating special form: {}", message)
             }
+            MalError::Exception(ref val) => write!(f, "Exception: {}", pr_str(val, true)),
         }
     }
 }
