@@ -280,7 +280,7 @@ impl fmt::Display for MalError {
             EmptyProgram => write!(f, "Empty program."),
             Tokenizer(message) => write!(f, "Tokenizer error: {}", message),
             Parser(message) => write!(f, "Parser error: {}", message),
-            UndefinedSymbol(symbol) => write!(f, "Undefined symbol: {}", symbol),
+            UndefinedSymbol(symbol) => write!(f, "'{}' not found", symbol),
             Evaluation(message) => write!(f, "Error in evaluation: {}", message),
             MalError::RustFunction(message) => {
                 write!(f, "Error when calling rust function: {}", message)
