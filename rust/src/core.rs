@@ -1,7 +1,9 @@
 use crate::env::Env;
 use crate::printer::pr_str;
 use crate::reader::read_str;
-use crate::types::MalValueType::{Atom, False, List, Nil, Number, Str, True, Vector, Symbol};
+use crate::types::MalValueType::{
+    Atom, False, List, MalFunc, Nil, Number, RustFunc, Str, Symbol, True, Vector,
+};
 use crate::types::{MalError, MalResult, MalValue};
 use std::error::Error;
 use std::fs;
@@ -62,12 +64,18 @@ fn core_eval(ast: &MalValue, env: &mut Env) -> MalResult {
     unsafe { EVAL_FUNC(ast, env) }
 }
 
-fn core_apply(function: &MalValue, args: &[MalValue], env: &mut Env) -> MalResult {
-    let mut vec = Vec::with_capacity(args.len() + 1);
-    vec.push(function.clone());
-    vec.extend_from_slice(args);
-
-    core_eval(&MalValue::new(List(vec)), env)
+fn core_apply(function: &MalValue, args: &[MalValue], _env: &mut Env) -> MalResult {
+    match *function.mal_type {
+        RustFunc(ref rust_function) => {
+            Ok((rust_function.func)(&args, &mut rust_function.env.clone())?)
+        }
+        MalFunc(ref mal_func) => {
+            let mut func_env =
+                Env::with_binds(Some(&mal_func.outer_env), &mal_func.parameters, &args)?;
+            core_eval(&mal_func.body, &mut func_env)
+        }
+        _ => Err(MalError::RustFunction("Expected function.".to_string())),
+    }
 }
 
 fn arg_count_eq(args: &[MalValue], expected: usize) -> Result<(), MalError> {
