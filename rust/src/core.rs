@@ -1,7 +1,7 @@
 use crate::env::Env;
 use crate::printer::pr_str;
 use crate::reader::read_str;
-use crate::types::MalValueType::{Atom, False, List, Nil, Number, Str, True, Vector};
+use crate::types::MalValueType::{Atom, False, List, Nil, Number, Str, True, Vector, Symbol};
 use crate::types::{MalError, MalResult, MalValue};
 use std::error::Error;
 use std::fs;
@@ -39,6 +39,10 @@ pub fn ns(env: &Env) -> Vec<(&'static str, MalValue)> {
         ("reset!", MalValue::new_rust_func(reset_atom, env)),
         ("swap!", MalValue::new_rust_func(swap_atom, env)),
         ("throw", MalValue::new_rust_func(throw, env)),
+        ("nil?", MalValue::new_rust_func(is_nil, env)),
+        ("true?", MalValue::new_rust_func(is_true, env)),
+        ("false?", MalValue::new_rust_func(is_false, env)),
+        ("symbol?", MalValue::new_rust_func(is_symbol, env)),
     ]
 }
 
@@ -409,4 +413,44 @@ fn throw(args: &[MalValue], _env: &mut Env) -> MalResult {
     arg_count_gte(args, 1)?;
 
     Err(MalError::Exception(args[0].clone()))
+}
+
+fn is_nil(args: &[MalValue], _env: &mut Env) -> MalResult {
+    arg_count_eq(args, 1)?;
+
+    if let Nil = *args[0].mal_type {
+        Ok(MalValue::new_boolean(true))
+    } else {
+        Ok(MalValue::new_boolean(false))
+    }
+}
+
+fn is_true(args: &[MalValue], _env: &mut Env) -> MalResult {
+    arg_count_eq(args, 1)?;
+
+    if let True = *args[0].mal_type {
+        Ok(MalValue::new_boolean(true))
+    } else {
+        Ok(MalValue::new_boolean(false))
+    }
+}
+
+fn is_false(args: &[MalValue], _env: &mut Env) -> MalResult {
+    arg_count_eq(args, 1)?;
+
+    if let False = *args[0].mal_type {
+        Ok(MalValue::new_boolean(true))
+    } else {
+        Ok(MalValue::new_boolean(false))
+    }
+}
+
+fn is_symbol(args: &[MalValue], _env: &mut Env) -> MalResult {
+    arg_count_eq(args, 1)?;
+
+    if let Symbol(_) = *args[0].mal_type {
+        Ok(MalValue::new_boolean(true))
+    } else {
+        Ok(MalValue::new_boolean(false))
+    }
 }
