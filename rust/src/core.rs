@@ -45,6 +45,7 @@ pub fn ns(env: &Env) -> Vec<(&'static str, MalValue)> {
         ("true?", MalValue::new_rust_func(is_true, env)),
         ("false?", MalValue::new_rust_func(is_false, env)),
         ("symbol?", MalValue::new_rust_func(is_symbol, env)),
+        ("apply", MalValue::new_rust_func(apply, env)),
     ]
 }
 
@@ -460,5 +461,23 @@ fn is_symbol(args: &[MalValue], _env: &mut Env) -> MalResult {
         Ok(MalValue::new_boolean(true))
     } else {
         Ok(MalValue::new_boolean(false))
+    }
+}
+
+fn apply(args: &[MalValue], env: &mut Env) -> MalResult {
+    arg_count_gte(args, 2)?;
+
+    let last_args_list = args.last().unwrap();
+
+    if let List(ref last_args) | Vector(ref last_args) = *last_args_list.mal_type {
+        let mut vec = Vec::with_capacity(args.len() + last_args.len() - 2);
+        vec.extend_from_slice(&args[1..args.len() - 1]);
+        vec.extend_from_slice(&last_args);
+
+        core_apply(&args[0], &vec, env)
+    } else {
+        Err(MalError::RustFunction(
+            "Invalid argument. Last argument of apply must be a list or vector.".to_string(),
+        ))
     }
 }
