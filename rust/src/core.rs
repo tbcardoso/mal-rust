@@ -7,6 +7,7 @@ use crate::types::MalValueType::{
 use crate::types::{MalError, MalResult, MalValue};
 use std::error::Error;
 use std::fs;
+use std::slice;
 
 pub fn ns(env: &Env) -> Vec<(&'static str, MalValue)> {
     vec![
@@ -46,6 +47,7 @@ pub fn ns(env: &Env) -> Vec<(&'static str, MalValue)> {
         ("false?", MalValue::new_rust_func(is_false, env)),
         ("symbol?", MalValue::new_rust_func(is_symbol, env)),
         ("apply", MalValue::new_rust_func(apply, env)),
+        ("map", MalValue::new_rust_func(map, env)),
     ]
 }
 
@@ -478,6 +480,25 @@ fn apply(args: &[MalValue], env: &mut Env) -> MalResult {
     } else {
         Err(MalError::RustFunction(
             "Invalid argument. Last argument of apply must be a list or vector.".to_string(),
+        ))
+    }
+}
+
+fn map(args: &[MalValue], env: &mut Env) -> MalResult {
+    arg_count_eq(args, 2)?;
+
+    let function = &args[0];
+
+    if let List(ref vec) | Vector(ref vec) = *args[1].mal_type {
+        let result_vec: Result<_, _> = vec
+            .iter()
+            .map(|elem| core_apply(function, slice::from_ref(elem), env))
+            .collect();
+
+        Ok(MalValue::new(List(result_vec?)))
+    } else {
+        Err(MalError::RustFunction(
+            "Invalid argument. Second argument of map must be a list or vector.".to_string(),
         ))
     }
 }
