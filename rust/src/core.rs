@@ -51,6 +51,9 @@ pub fn ns(env: &Env) -> Vec<(&'static str, MalValue)> {
         ("keyword", MalValue::new_rust_func(keyword, env)),
         ("apply", MalValue::new_rust_func(apply, env)),
         ("map", MalValue::new_rust_func(map, env)),
+        ("vector", MalValue::new_rust_func(vector, env)),
+        ("vector?", MalValue::new_rust_func(is_vector, env)),
+        ("sequential?", MalValue::new_rust_func(is_sequential, env)),
     ]
 }
 
@@ -537,5 +540,29 @@ fn keyword(args: &[MalValue], _env: &mut Env) -> MalResult {
         Err(MalError::RustFunction(
             "Argument must be a string.".to_string(),
         ))
+    }
+}
+
+fn vector(args: &[MalValue], _env: &mut Env) -> MalResult {
+    Ok(MalValue::new(Vector(Vec::from(args))))
+}
+
+fn is_vector(args: &[MalValue], _env: &mut Env) -> MalResult {
+    arg_count_eq(args, 1)?;
+
+    if let Vector(_) = *args[0].mal_type {
+        Ok(MalValue::new_boolean(true))
+    } else {
+        Ok(MalValue::new_boolean(false))
+    }
+}
+
+fn is_sequential(args: &[MalValue], _env: &mut Env) -> MalResult {
+    arg_count_eq(args, 1)?;
+
+    if let List(_) | Vector(_) = *args[0].mal_type {
+        Ok(MalValue::new_boolean(true))
+    } else {
+        Ok(MalValue::new_boolean(false))
     }
 }
