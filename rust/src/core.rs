@@ -2,7 +2,7 @@ use crate::env::Env;
 use crate::printer::pr_str;
 use crate::reader::read_str;
 use crate::types::MalValueType::{
-    Atom, False, List, MalFunc, Nil, Number, RustFunc, Str, Symbol, True, Vector,
+    Atom, False, Keyword, List, MalFunc, Nil, Number, RustFunc, Str, Symbol, True, Vector,
 };
 use crate::types::{MalError, MalResult, MalValue};
 use std::error::Error;
@@ -46,6 +46,9 @@ pub fn ns(env: &Env) -> Vec<(&'static str, MalValue)> {
         ("true?", MalValue::new_rust_func(is_true, env)),
         ("false?", MalValue::new_rust_func(is_false, env)),
         ("symbol?", MalValue::new_rust_func(is_symbol, env)),
+        ("symbol", MalValue::new_rust_func(symbol, env)),
+        ("keyword?", MalValue::new_rust_func(is_keyword, env)),
+        ("keyword", MalValue::new_rust_func(keyword, env)),
         ("apply", MalValue::new_rust_func(apply, env)),
         ("map", MalValue::new_rust_func(map, env)),
     ]
@@ -499,6 +502,40 @@ fn map(args: &[MalValue], env: &mut Env) -> MalResult {
     } else {
         Err(MalError::RustFunction(
             "Invalid argument. Second argument of map must be a list or vector.".to_string(),
+        ))
+    }
+}
+
+fn symbol(args: &[MalValue], _env: &mut Env) -> MalResult {
+    arg_count_eq(args, 1)?;
+
+    if let Str(ref str_val) = *args[0].mal_type {
+        Ok(MalValue::new(Symbol(str_val.clone())))
+    } else {
+        Err(MalError::RustFunction(
+            "Argument must be a string.".to_string(),
+        ))
+    }
+}
+
+fn is_keyword(args: &[MalValue], _env: &mut Env) -> MalResult {
+    arg_count_eq(args, 1)?;
+
+    if let Keyword(_) = *args[0].mal_type {
+        Ok(MalValue::new_boolean(true))
+    } else {
+        Ok(MalValue::new_boolean(false))
+    }
+}
+
+fn keyword(args: &[MalValue], _env: &mut Env) -> MalResult {
+    arg_count_eq(args, 1)?;
+
+    if let Str(ref str_val) = *args[0].mal_type {
+        Ok(MalValue::new(Keyword(str_val.clone())))
+    } else {
+        Err(MalError::RustFunction(
+            "Argument must be a string.".to_string(),
         ))
     }
 }
