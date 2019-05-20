@@ -1,10 +1,8 @@
 use crate::env::Env;
 use crate::printer::pr_str;
 use crate::reader::read_str;
-use crate::types::MalValueType::{
-    Atom, False, Keyword, List, MalFunc, Nil, Number, RustFunc, Str, Symbol, True, Vector,
-};
-use crate::types::{MalError, MalResult, MalValue};
+use crate::types::MalValueType::{Atom, False, Keyword, List, MalFunc, Map, Nil, Number, RustFunc, Str, Symbol, True, Vector};
+use crate::types::{MalError, MalResult, MalValue, MalMap};
 use std::error::Error;
 use std::fs;
 use std::slice;
@@ -54,6 +52,8 @@ pub fn ns(env: &Env) -> Vec<(&'static str, MalValue)> {
         ("vector", MalValue::new_rust_func(vector, env)),
         ("vector?", MalValue::new_rust_func(is_vector, env)),
         ("sequential?", MalValue::new_rust_func(is_sequential, env)),
+        ("hash-map", MalValue::new_rust_func(hash_map, env)),
+        ("map?", MalValue::new_rust_func(is_map, env)),
     ]
 }
 
@@ -561,6 +561,20 @@ fn is_sequential(args: &[MalValue], _env: &mut Env) -> MalResult {
     arg_count_eq(args, 1)?;
 
     if let List(_) | Vector(_) = *args[0].mal_type {
+        Ok(MalValue::new_boolean(true))
+    } else {
+        Ok(MalValue::new_boolean(false))
+    }
+}
+
+fn hash_map(args: &[MalValue], _env: &mut Env) -> MalResult {
+    Ok(MalValue::new(Map(MalMap::from_arguments(args)?)))
+}
+
+fn is_map(args: &[MalValue], _env: &mut Env) -> MalResult {
+    arg_count_eq(args, 1)?;
+
+    if let Map(_) = *args[0].mal_type {
         Ok(MalValue::new_boolean(true))
     } else {
         Ok(MalValue::new_boolean(false))
