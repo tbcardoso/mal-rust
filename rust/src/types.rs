@@ -170,6 +170,47 @@ impl MalMap {
 
         let mut map = HashMap::with_capacity(arguments.len() % 2);
 
+        MalMap::extend_map_from_arguments(&mut map, arguments)?;
+        Ok(MalMap { map })
+    }
+
+    pub fn assoc(&self, arguments: &[MalValue]) -> Result<MalMap, MalError> {
+        if arguments.len() % 2 != 0 {
+            return Err(MalError::RustFunction(
+                "hash map must have an even number of arguments".to_string(),
+            ));
+        }
+
+        let mut map = self.map.clone();
+        MalMap::extend_map_from_arguments(&mut map, arguments)?;
+        Ok(MalMap { map })
+    }
+
+    pub fn dissoc(&self, arguments: &[MalValue]) -> Result<MalMap, MalError> {
+        let mut map = self.map.clone();
+
+        for arg in arguments {
+            let key = match *arg.mal_type {
+                MalValueType::Str(ref val) => Ok(format!("s{}", val)),
+                MalValueType::Keyword(ref val) => Ok(format!("k{}", val)),
+                _ => Err(MalError::RustFunction(
+                    "hash map keys must be strings or keywords".to_string(),
+                )),
+            }?;
+
+            map.remove(&MalMapKey {
+                key,
+                mal_value: arg.clone(),
+            });
+        }
+
+        Ok(MalMap { map })
+    }
+
+
+    fn extend_map_from_arguments(map: &mut HashMap<MalMapKey, MalValue>, arguments: &[MalValue]) -> Result<(), MalError> {
+        assert_eq!(0, arguments.len() % 2);
+
         for i in (0..arguments.len()).step_by(2) {
             let key = match *arguments[i].mal_type {
                 MalValueType::Str(ref val) => Ok(format!("s{}", val)),
@@ -188,7 +229,7 @@ impl MalMap {
             );
         }
 
-        Ok(MalMap { map })
+        Ok(())
     }
 
     pub fn iter(&self) -> MalMapIter {

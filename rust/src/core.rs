@@ -54,6 +54,8 @@ pub fn ns(env: &Env) -> Vec<(&'static str, MalValue)> {
         ("sequential?", MalValue::new_rust_func(is_sequential, env)),
         ("hash-map", MalValue::new_rust_func(hash_map, env)),
         ("map?", MalValue::new_rust_func(is_map, env)),
+        ("assoc", MalValue::new_rust_func(assoc, env)),
+        ("dissoc", MalValue::new_rust_func(dissoc, env)),
     ]
 }
 
@@ -578,5 +580,29 @@ fn is_map(args: &[MalValue], _env: &mut Env) -> MalResult {
         Ok(MalValue::new_boolean(true))
     } else {
         Ok(MalValue::new_boolean(false))
+    }
+}
+
+fn assoc(args: &[MalValue], _env: &mut Env) -> MalResult {
+    arg_count_gte(args, 1)?;
+
+    if let Map(ref mal_map) = *args[0].mal_type {
+        Ok(MalValue::new(Map(mal_map.assoc(&args[1..])?)))
+    } else {
+        Err(MalError::RustFunction(
+            "First argument must be a hash map.".to_string(),
+        ))
+    }
+}
+
+fn dissoc(args: &[MalValue], _env: &mut Env) -> MalResult {
+    arg_count_gte(args, 1)?;
+
+    if let Map(ref mal_map) = *args[0].mal_type {
+        Ok(MalValue::new(Map(mal_map.dissoc(&args[1..])?)))
+    } else {
+        Err(MalError::RustFunction(
+            "First argument must be a hash map.".to_string(),
+        ))
     }
 }
