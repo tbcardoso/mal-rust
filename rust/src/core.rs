@@ -5,6 +5,8 @@ use crate::types::MalValueType::{
     Atom, False, Keyword, List, MalFunc, Map, Nil, Number, RustFunc, Str, Symbol, True, Vector,
 };
 use crate::types::{MalError, MalMap, MalResult, MalValue};
+use rustyline::error::ReadlineError;
+use rustyline::Editor;
 use std::error::Error;
 use std::fs;
 use std::slice;
@@ -62,6 +64,7 @@ pub fn ns(env: &Env) -> Vec<(&'static str, MalValue)> {
         ("contains?", MalValue::new_rust_func(contains, env)),
         ("keys", MalValue::new_rust_func(keys, env)),
         ("vals", MalValue::new_rust_func(vals, env)),
+        ("readline", MalValue::new_rust_func(readline, env)),
     ]
 }
 
@@ -659,6 +662,25 @@ fn vals(args: &[MalValue], _env: &mut Env) -> MalResult {
     } else {
         Err(MalError::RustFunction(
             "Argument must be a hash map.".to_string(),
+        ))
+    }
+}
+
+fn readline(args: &[MalValue], _env: &mut Env) -> MalResult {
+    arg_count_eq(args, 1)?;
+
+    if let Str(ref prompt) = *args[0].mal_type {
+        let mut editor = Editor::<()>::new();
+
+        let read_result = editor.readline(prompt);
+        match read_result {
+            Ok(line) => Ok(MalValue::new(Str(line.trim_end_matches('\n').to_string()))),
+            Err(ReadlineError::Eof) => Ok(MalValue::nil()),
+            Err(_err) => Err(MalError::RustFunction("Error reading line.".to_string())),
+        }
+    } else {
+        Err(MalError::RustFunction(
+            "Argument must be a string.".to_string(),
         ))
     }
 }
