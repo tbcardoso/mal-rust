@@ -207,8 +207,10 @@ impl MalMap {
         Ok(MalMap { map })
     }
 
-
-    fn extend_map_from_arguments(map: &mut HashMap<MalMapKey, MalValue>, arguments: &[MalValue]) -> Result<(), MalError> {
+    fn extend_map_from_arguments(
+        map: &mut HashMap<MalMapKey, MalValue>,
+        arguments: &[MalValue],
+    ) -> Result<(), MalError> {
         assert_eq!(0, arguments.len() % 2);
 
         for i in (0..arguments.len()).step_by(2) {
@@ -230,6 +232,35 @@ impl MalMap {
         }
 
         Ok(())
+    }
+
+    pub fn get(&self, key: &MalValue) -> MalValue {
+        let str_key = match *key.mal_type {
+            MalValueType::Str(ref val) => format!("s{}", val),
+            MalValueType::Keyword(ref val) => format!("k{}", val),
+            _ => return MalValue::nil(),
+        };
+
+        self.map
+            .get(&MalMapKey {
+                key: str_key,
+                mal_value: key.clone(),
+            })
+            .cloned()
+            .unwrap_or_else(MalValue::nil)
+    }
+
+    pub fn contains(&self, key: &MalValue) -> bool {
+        let str_key = match *key.mal_type {
+            MalValueType::Str(ref val) => format!("s{}", val),
+            MalValueType::Keyword(ref val) => format!("k{}", val),
+            _ => return false,
+        };
+
+        self.map.contains_key(&MalMapKey {
+            key: str_key,
+            mal_value: key.clone(),
+        })
     }
 
     pub fn iter(&self) -> MalMapIter {

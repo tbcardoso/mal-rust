@@ -1,8 +1,10 @@
 use crate::env::Env;
 use crate::printer::pr_str;
 use crate::reader::read_str;
-use crate::types::MalValueType::{Atom, False, Keyword, List, MalFunc, Map, Nil, Number, RustFunc, Str, Symbol, True, Vector};
-use crate::types::{MalError, MalResult, MalValue, MalMap};
+use crate::types::MalValueType::{
+    Atom, False, Keyword, List, MalFunc, Map, Nil, Number, RustFunc, Str, Symbol, True, Vector,
+};
+use crate::types::{MalError, MalMap, MalResult, MalValue};
 use std::error::Error;
 use std::fs;
 use std::slice;
@@ -56,6 +58,8 @@ pub fn ns(env: &Env) -> Vec<(&'static str, MalValue)> {
         ("map?", MalValue::new_rust_func(is_map, env)),
         ("assoc", MalValue::new_rust_func(assoc, env)),
         ("dissoc", MalValue::new_rust_func(dissoc, env)),
+        ("get", MalValue::new_rust_func(get, env)),
+        ("contains?", MalValue::new_rust_func(contains, env)),
     ]
 }
 
@@ -604,5 +608,29 @@ fn dissoc(args: &[MalValue], _env: &mut Env) -> MalResult {
         Err(MalError::RustFunction(
             "First argument must be a hash map.".to_string(),
         ))
+    }
+}
+
+fn get(args: &[MalValue], _env: &mut Env) -> MalResult {
+    arg_count_eq(args, 2)?;
+
+    match *args[0].mal_type {
+        Map(ref mal_map) => Ok(mal_map.get(&args[1])),
+        Nil => Ok(MalValue::nil()),
+        _ => Err(MalError::RustFunction(
+            "First argument must be a hash map.".to_string(),
+        )),
+    }
+}
+
+fn contains(args: &[MalValue], _env: &mut Env) -> MalResult {
+    arg_count_eq(args, 2)?;
+
+    match *args[0].mal_type {
+        Map(ref mal_map) => Ok(MalValue::new_boolean(mal_map.contains(&args[1]))),
+        Nil => Ok(MalValue::new_boolean(false)),
+        _ => Err(MalError::RustFunction(
+            "First argument must be a hash map.".to_string(),
+        )),
     }
 }
