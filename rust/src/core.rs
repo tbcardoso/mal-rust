@@ -60,6 +60,8 @@ pub fn ns(env: &Env) -> Vec<(&'static str, MalValue)> {
         ("dissoc", MalValue::new_rust_func(dissoc, env)),
         ("get", MalValue::new_rust_func(get, env)),
         ("contains?", MalValue::new_rust_func(contains, env)),
+        ("keys", MalValue::new_rust_func(keys, env)),
+        ("vals", MalValue::new_rust_func(vals, env)),
     ]
 }
 
@@ -632,5 +634,31 @@ fn contains(args: &[MalValue], _env: &mut Env) -> MalResult {
         _ => Err(MalError::RustFunction(
             "First argument must be a hash map.".to_string(),
         )),
+    }
+}
+
+fn keys(args: &[MalValue], _env: &mut Env) -> MalResult {
+    arg_count_eq(args, 1)?;
+
+    if let Map(ref mal_map) = *args[0].mal_type {
+        let keys = mal_map.iter().map(|(key, _)| key.clone()).collect();
+        Ok(MalValue::new(List(keys)))
+    } else {
+        Err(MalError::RustFunction(
+            "Argument must be a hash map.".to_string(),
+        ))
+    }
+}
+
+fn vals(args: &[MalValue], _env: &mut Env) -> MalResult {
+    arg_count_eq(args, 1)?;
+
+    if let Map(ref mal_map) = *args[0].mal_type {
+        let vals = mal_map.iter().map(|(_, val)| val.clone()).collect();
+        Ok(MalValue::new(List(vals)))
+    } else {
+        Err(MalError::RustFunction(
+            "Argument must be a hash map.".to_string(),
+        ))
     }
 }
