@@ -31,6 +31,7 @@ pub fn ns(env: &Env) -> Vec<(&'static str, MalValue)> {
         ("nth", MalValue::new_rust_func(nth, env)),
         ("first", MalValue::new_rust_func(first, env)),
         ("rest", MalValue::new_rust_func(rest, env)),
+        ("conj", MalValue::new_rust_func(conj, env)),
         ("=", MalValue::new_rust_func(equals, env)),
         ("<", MalValue::new_rust_func(lt, env)),
         ("<=", MalValue::new_rust_func(lte, env)),
@@ -73,6 +74,7 @@ pub fn ns(env: &Env) -> Vec<(&'static str, MalValue)> {
         ("fn?", MalValue::new_rust_func(is_fn, env)),
         ("macro?", MalValue::new_rust_func(is_macro, env)),
         ("time-ms", MalValue::new_rust_func(time_ms, env)),
+        ("seq", MalValue::new_rust_func(seq, env)),
     ]
 }
 
@@ -278,6 +280,29 @@ fn rest(args: &[MalValue], _env: &mut Env) -> MalResult {
             MalValue::new(List(Vec::from(&vec[1..])))
         }),
         Nil => Ok(MalValue::new(List(Vec::new()))),
+        _ => Err(MalError::RustFunction("Invalid argument".to_string())),
+    }
+}
+
+fn conj(args: &[MalValue], _env: &mut Env) -> MalResult {
+    arg_count_gte(args, 2)?;
+
+    match *args[0].mal_type {
+        List(ref vec) => {
+            let mut new_vec = Vec::with_capacity(vec.len() + args.len() - 1);
+            let start_vec: Vec<MalValue> = args[1..].iter().rev().cloned().collect();
+            new_vec.extend_from_slice(&start_vec);
+            new_vec.extend_from_slice(vec);
+
+            Ok(MalValue::new(List(new_vec)))
+        }
+        Vector(ref vec) => {
+            let mut new_vec = Vec::with_capacity(vec.len() + args.len() - 1);
+            new_vec.extend_from_slice(vec);
+            new_vec.extend_from_slice(&args[1..]);
+
+            Ok(MalValue::new(Vector(new_vec)))
+        }
         _ => Err(MalError::RustFunction("Invalid argument".to_string())),
     }
 }
@@ -738,4 +763,24 @@ fn time_ms(args: &[MalValue], _env: &mut Env) -> MalResult {
         .as_millis();
 
     Ok(MalValue::new(Number(millis as f64)))
+}
+
+fn seq(args: &[MalValue], _env: &mut Env) -> MalResult {
+    arg_count_eq(args, 1)?;
+
+    match *args[0].mal_type {
+        List(ref vec) | Vector(ref vec) if vec.is_empty() => Ok(MalValue::nil()),
+        List(_) => Ok(args[0].clone()),
+        Vector(ref vec) => Ok(MalValue::new(List(vec.clone()))),
+        Str(ref str_val) if str_val.is_empty() => Ok(MalValue::nil()),
+        Str(ref str_val) => {
+            let chars = str_val
+                .chars()
+                .map(|c| MalValue::new(Str(c.to_string())))
+                .collect();
+            Ok(MalValue::new(List(chars)))
+        }
+        Nil => Ok(MalValue::nil()),
+        _ => Err(MalError::RustFunction("Invalid argument".to_string())),
+    }
 }
