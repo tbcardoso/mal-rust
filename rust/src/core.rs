@@ -612,7 +612,7 @@ fn is_sequential(args: &[MalValue], _env: &mut Env) -> MalResult {
 }
 
 fn hash_map(args: &[MalValue], _env: &mut Env) -> MalResult {
-    Ok(MalValue::new(Map(MalMap::from_arguments(args)?)))
+    Ok(MalValue::new_map(MalMap::from_arguments(args)?))
 }
 
 fn is_map(args: &[MalValue], _env: &mut Env) -> MalResult {
@@ -629,7 +629,7 @@ fn assoc(args: &[MalValue], _env: &mut Env) -> MalResult {
     arg_count_gte(args, 1)?;
 
     if let Map(ref mal_map) = *args[0].mal_type {
-        Ok(MalValue::new(Map(mal_map.assoc(&args[1..])?)))
+        Ok(MalValue::new_map(mal_map.assoc(&args[1..])?))
     } else {
         Err(MalError::RustFunction(
             "First argument must be a hash map.".to_string(),
@@ -641,7 +641,7 @@ fn dissoc(args: &[MalValue], _env: &mut Env) -> MalResult {
     arg_count_gte(args, 1)?;
 
     if let Map(ref mal_map) = *args[0].mal_type {
-        Ok(MalValue::new(Map(mal_map.dissoc(&args[1..])?)))
+        Ok(MalValue::new_map(mal_map.dissoc(&args[1..])?))
     } else {
         Err(MalError::RustFunction(
             "First argument must be a hash map.".to_string(),

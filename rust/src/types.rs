@@ -63,6 +63,10 @@ impl MalValue {
         MalValue::new(MalValueType::Atom(RefCell::new(value)))
     }
 
+    pub fn new_map(mal_map: MalMap) -> MalValue {
+        MalValue::new(MalValueType::Map(mal_map))
+    }
+
     pub fn nil() -> MalValue {
         MalValue::new(MalValueType::Nil)
     }
@@ -85,6 +89,7 @@ impl MalValue {
                     meta,
                 })))
             }
+            MalValueType::Map(ref mal_map) => Ok(MalValue::new_map(mal_map.clone_with_meta(meta))),
             _ => Err(MalError::Evaluation(
                 "The given type does not support meta attributes.".to_string(),
             )),
@@ -95,6 +100,7 @@ impl MalValue {
         match *self.mal_type {
             MalValueType::MalFunc(ref mal_func) => Ok(mal_func.meta.clone()),
             MalValueType::RustFunc(ref rust_func) => Ok(rust_func.meta.clone()),
+            MalValueType::Map(ref mal_map) => Ok(mal_map.meta.clone()),
             _ => Err(MalError::RustFunction(
                 "The given type does not support meta attributes.".to_string(),
             )),
@@ -201,6 +207,7 @@ impl PartialEq for MalValueType {
 #[derive(Debug, PartialEq)]
 pub struct MalMap {
     map: HashMap<MalMapKey, MalValue>,
+    pub meta: MalValue,
 }
 
 #[derive(Clone, Debug)]
@@ -227,6 +234,7 @@ impl MalMap {
     pub fn new() -> MalMap {
         MalMap {
             map: HashMap::new(),
+            meta: MalValue::nil(),
         }
     }
 
@@ -240,7 +248,17 @@ impl MalMap {
         let mut map = HashMap::with_capacity(arguments.len() % 2);
 
         MalMap::extend_map_from_arguments(&mut map, arguments)?;
-        Ok(MalMap { map })
+        Ok(MalMap {
+            map,
+            meta: MalValue::nil(),
+        })
+    }
+
+    pub fn clone_with_meta(&self, meta: MalValue) -> MalMap {
+        MalMap {
+            map: self.map.clone(),
+            meta,
+        }
     }
 
     pub fn assoc(&self, arguments: &[MalValue]) -> Result<MalMap, MalError> {
@@ -252,7 +270,10 @@ impl MalMap {
 
         let mut map = self.map.clone();
         MalMap::extend_map_from_arguments(&mut map, arguments)?;
-        Ok(MalMap { map })
+        Ok(MalMap {
+            map,
+            meta: MalValue::nil(),
+        })
     }
 
     pub fn dissoc(&self, arguments: &[MalValue]) -> Result<MalMap, MalError> {
@@ -273,7 +294,10 @@ impl MalMap {
             });
         }
 
-        Ok(MalMap { map })
+        Ok(MalMap {
+            map,
+            meta: MalValue::nil(),
+        })
     }
 
     fn extend_map_from_arguments(
