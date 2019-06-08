@@ -39,6 +39,7 @@ fn scan_token(text: &str) -> Result<Option<MalTokenType>, MalError> {
         '\'' => Ok(Some(SingleQuote)),
         '`' => Ok(Some(BackTick)),
         '~' => Ok(Some(if text == "~@" { TildeAtSign } else { Tilde })),
+        '^' => Ok(Some(Caret)),
         ';' => Ok(None),
         '"' => Ok(Some(Str(scan_string(text)?))),
         ':' => Ok(Some(scan_keyword(text))),
@@ -261,6 +262,19 @@ mod tests {
                 MalToken::new(TildeAtSign),
                 MalToken::new(TildeAtSign),
                 MalToken::new(TildeAtSign)
+            ])
+        );
+    }
+
+    #[test]
+    fn test_tokenize_caret() {
+        assert_eq!(tokenize("^"), Ok(vec![MalToken::new(Caret)]));
+        assert_eq!(
+            tokenize("^ ^^"),
+            Ok(vec![
+                MalToken::new(Caret),
+                MalToken::new(Caret),
+                MalToken::new(Caret)
             ])
         );
     }

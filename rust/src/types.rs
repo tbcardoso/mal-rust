@@ -421,6 +421,7 @@ pub enum MalTokenType {
     BackTick,
     Tilde,
     TildeAtSign,
+    Caret,
     Nil,
     True,
     False,

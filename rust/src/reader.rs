@@ -58,6 +58,7 @@ fn read_form(reader: &mut Reader) -> MalResult {
         MalTokenType::BackTick => read_short_form(reader, "quasiquote"),
         MalTokenType::Tilde => read_short_form(reader, "unquote"),
         MalTokenType::TildeAtSign => read_short_form(reader, "splice-unquote"),
+        MalTokenType::Caret => read_with_meta(reader),
         _ => read_atom(reader),
     }
 }
@@ -127,6 +128,19 @@ fn read_short_form(reader: &mut Reader, name: &str) -> MalResult {
     Ok(MalValue::new(List(vec![
         MalValue::new(Symbol(name.to_string())),
         read_form(reader)?,
+    ])))
+}
+
+fn read_with_meta(reader: &mut Reader) -> MalResult {
+    reader.next().unwrap();
+
+    let meta = read_form(reader)?;
+    let arg = read_form(reader)?;
+
+    Ok(MalValue::new(List(vec![
+        MalValue::new(Symbol("with-meta".to_string())),
+        arg,
+        meta,
     ])))
 }
 
@@ -471,6 +485,28 @@ mod tests {
         );
 
         match read_str("~@") {
+            Err(MalError::Parser(_)) => {}
+            _ => unreachable!("Expected Parser error."),
+        }
+    }
+
+    #[test]
+    fn test_read_str_with_meta() {
+        assert_eq!(
+            read_str("^a +"),
+            Ok(MalValue::new(List(vec![
+                MalValue::new(Symbol("with-meta".to_string())),
+                MalValue::new(Symbol("+".to_string())),
+                MalValue::new(Symbol("a".to_string())),
+            ])))
+        );
+
+        match read_str("^") {
+            Err(MalError::Parser(_)) => {}
+            _ => unreachable!("Expected Parser error."),
+        }
+
+        match read_str("^a") {
             Err(MalError::Parser(_)) => {}
             _ => unreachable!("Expected Parser error."),
         }
