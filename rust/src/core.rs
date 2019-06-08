@@ -67,6 +67,10 @@ pub fn ns(env: &Env) -> Vec<(&'static str, MalValue)> {
         ("readline", MalValue::new_rust_func(readline, env)),
         ("meta", MalValue::new_rust_func(meta, env)),
         ("with-meta", MalValue::new_rust_func(with_meta, env)),
+        ("string?", MalValue::new_rust_func(is_string, env)),
+        ("number?", MalValue::new_rust_func(is_number, env)),
+        ("fn?", MalValue::new_rust_func(is_fn, env)),
+        ("macro?", MalValue::new_rust_func(is_macro, env)),
     ]
 }
 
@@ -423,7 +427,7 @@ fn swap_atom(args: &[MalValue], env: &mut Env) -> MalResult {
         ));
     };
 
-    if !args[1].is_function() {
+    if !args[1].is_function_or_macro() {
         return Err(MalError::RustFunction(
             "Invalid 2nd argument. Expected function.".to_string(),
         ));
@@ -697,4 +701,28 @@ fn with_meta(args: &[MalValue], _env: &mut Env) -> MalResult {
     arg_count_eq(args, 2)?;
 
     args[0].clone_with_meta(args[1].clone())
+}
+
+fn is_string(args: &[MalValue], _env: &mut Env) -> MalResult {
+    arg_count_eq(args, 1)?;
+
+    Ok(MalValue::new_boolean(args[0].is_string()))
+}
+
+fn is_number(args: &[MalValue], _env: &mut Env) -> MalResult {
+    arg_count_eq(args, 1)?;
+
+    Ok(MalValue::new_boolean(args[0].is_number()))
+}
+
+fn is_fn(args: &[MalValue], _env: &mut Env) -> MalResult {
+    arg_count_eq(args, 1)?;
+
+    Ok(MalValue::new_boolean(args[0].is_function()))
+}
+
+fn is_macro(args: &[MalValue], _env: &mut Env) -> MalResult {
+    arg_count_eq(args, 1)?;
+
+    Ok(MalValue::new_boolean(args[0].is_macro()))
 }

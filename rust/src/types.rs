@@ -102,6 +102,22 @@ impl MalValue {
 
     pub fn is_function(&self) -> bool {
         match *self.mal_type {
+            MalValueType::RustFunc(_) => true,
+            MalValueType::MalFunc(ref mal_func) => !mal_func.is_macro,
+            _ => false,
+        }
+    }
+
+    pub fn is_macro(&self) -> bool {
+        if let MalValueType::MalFunc(ref mal_func) = *self.mal_type {
+            mal_func.is_macro
+        } else {
+            false
+        }
+    }
+
+    pub fn is_function_or_macro(&self) -> bool {
+        match *self.mal_type {
             MalValueType::RustFunc(_) | MalValueType::MalFunc(_) => true,
             _ => false,
         }
@@ -109,6 +125,22 @@ impl MalValue {
 
     pub fn is_atom(&self) -> bool {
         if let MalValueType::Atom(_) = *self.mal_type {
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn is_string(&self) -> bool {
+        if let MalValueType::Str(_) = *self.mal_type {
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn is_number(&self) -> bool {
+        if let MalValueType::Number(_) = *self.mal_type {
             true
         } else {
             false
