@@ -6,7 +6,7 @@ use malrs::reader::read_str;
 use malrs::readline::Readline;
 use malrs::types::MalValueType;
 use malrs::types::MalValueType::{List, MalFunc, Map, Nil, RustFunc, Str, Symbol, Vector};
-use malrs::types::{MalError, MalMap, MalResult, MalValue};
+use malrs::types::{MalError, MalMap, MalResult, MalValue, MalVector};
 use std::iter::once;
 use std::{env, process};
 
@@ -175,7 +175,7 @@ fn eval_ast(ast: &MalValue, env: &mut Env) -> MalResult {
     match *ast.mal_type {
         Symbol(ref s) => env.get(&s),
         List(ref list) => Ok(MalValue::new(List(eval_ast_seq(list, env)?))),
-        Vector(ref vec) => Ok(MalValue::new(Vector(eval_ast_seq(vec, env)?))),
+        Vector(ref mal_vec) => Ok(MalValue::new_vector(eval_ast_seq(&mal_vec.vec, env)?)),
         Map(ref mal_map) => eval_map(mal_map, env),
         _ => Ok(ast.clone()),
     }
@@ -250,7 +250,7 @@ fn macroexpand(ast: &MalValue, env: &mut Env) -> MalResult {
 
     while let Some(ref macro_val) = get_macro_function(&ast, env) {
         if let MalFunc(ref function) = *macro_val.mal_type {
-            if let List(ref vec) | Vector(ref vec) = *ast.mal_type {
+            if let List(ref vec) | Vector(MalVector { ref vec, .. }) = *ast.mal_type {
                 let mut macro_env =
                     Env::with_binds(Some(&function.outer_env), &function.parameters, &vec[1..])?;
 
@@ -298,7 +298,10 @@ fn apply_special_form_let(args: &[MalValue], env: &Env) -> ApplyResult {
     }
 
     let bindings = match *args[0].mal_type {
-        List(ref bindings) | Vector(ref bindings) => Ok(bindings.as_slice()),
+        List(ref bindings)
+        | Vector(MalVector {
+            vec: ref bindings, ..
+        }) => Ok(bindings.as_slice()),
         _ => Err(MalError::SpecialForm(
             "let* first argument must be a list or a vector".to_string(),
         )),
@@ -338,7 +341,10 @@ fn apply_special_form_fn(args: &[MalValue], env: &Env) -> ApplyResult {
     }
 
     let bindings = match *args[0].mal_type {
-        List(ref bindings) | Vector(ref bindings) => Ok(bindings.as_slice()),
+        List(ref bindings)
+        | Vector(MalVector {
+            vec: ref bindings, ..
+        }) => Ok(bindings.as_slice()),
         _ => Err(MalError::SpecialForm(
             "fn* first argument must be a list or a vector".to_string(),
         )),
@@ -422,7 +428,9 @@ fn apply_special_form_quasiquote(args: &[MalValue], env: &mut Env) -> ApplyResul
 
 fn quasiquote(ast: &MalValue) -> MalResult {
     match *ast.mal_type {
-        MalValueType::List(ref vec) | MalValueType::Vector(ref vec) if !vec.is_empty() => {
+        MalValueType::List(ref vec) | MalValueType::Vector(MalVector { ref vec, .. })
+            if !vec.is_empty() =>
+        {
             let elem0 = &vec[0];
             match *elem0.mal_type {
                 Symbol(ref s) if s == "unquote" => {
@@ -435,31 +443,30 @@ fn quasiquote(ast: &MalValue) -> MalResult {
                         Ok(vec[1].clone())
                     }
                 }
-                MalValueType::List(ref inner_vec) | MalValueType::Vector(ref inner_vec)
-                    if !inner_vec.is_empty() =>
-                {
-                    match *inner_vec[0].mal_type {
-                        Symbol(ref s) if s == "splice-unquote" => {
-                            if inner_vec.len() != 2 {
-                                Err(MalError::SpecialForm(format!(
-                                    "splice-unquote expects 1 argument, got {}",
-                                    inner_vec.len() - 1
-                                )))
-                            } else {
-                                Ok(MalValue::new(List(vec![
-                                    MalValue::new(Symbol("concat".to_string())),
-                                    inner_vec[1].clone(),
-                                    quasiquote(&MalValue::new(List(vec[1..].to_vec())))?,
-                                ])))
-                            }
+                MalValueType::List(ref inner_vec)
+                | MalValueType::Vector(MalVector {
+                    vec: ref inner_vec, ..
+                }) if !inner_vec.is_empty() => match *inner_vec[0].mal_type {
+                    Symbol(ref s) if s == "splice-unquote" => {
+                        if inner_vec.len() != 2 {
+                            Err(MalError::SpecialForm(format!(
+                                "splice-unquote expects 1 argument, got {}",
+                                inner_vec.len() - 1
+                            )))
+                        } else {
+                            Ok(MalValue::new(List(vec![
+                                MalValue::new(Symbol("concat".to_string())),
+                                inner_vec[1].clone(),
+                                quasiquote(&MalValue::new(List(vec[1..].to_vec())))?,
+                            ])))
                         }
-                        _ => Ok(MalValue::new(List(vec![
-                            MalValue::new(Symbol("cons".to_string())),
-                            quasiquote(elem0)?,
-                            quasiquote(&MalValue::new(List(vec[1..].to_vec())))?,
-                        ]))),
                     }
-                }
+                    _ => Ok(MalValue::new(List(vec![
+                        MalValue::new(Symbol("cons".to_string())),
+                        quasiquote(elem0)?,
+                        quasiquote(&MalValue::new(List(vec[1..].to_vec())))?,
+                    ]))),
+                },
                 _ => Ok(MalValue::new(List(vec![
                     MalValue::new(Symbol("cons".to_string())),
                     quasiquote(elem0)?,

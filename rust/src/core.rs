@@ -4,7 +4,7 @@ use crate::reader::read_str;
 use crate::types::MalValueType::{
     Atom, False, Keyword, List, MalFunc, Map, Nil, Number, RustFunc, Str, Symbol, True, Vector,
 };
-use crate::types::{MalError, MalMap, MalResult, MalValue};
+use crate::types::{MalError, MalMap, MalResult, MalValue, MalVector};
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 use std::error::Error;
@@ -187,7 +187,7 @@ fn cons(args: &[MalValue], _env: &mut Env) -> MalResult {
     arg_count_eq(args, 2)?;
 
     match *args[1].mal_type {
-        List(ref vec) | Vector(ref vec) => {
+        List(ref vec) | Vector(MalVector { ref vec, .. }) => {
             let mut new_vec = Vec::with_capacity(vec.len() + 1);
             new_vec.push(args[0].clone());
             new_vec.extend_from_slice(vec);
@@ -203,7 +203,7 @@ fn concat(args: &[MalValue], _env: &mut Env) -> MalResult {
 
     for arg in args {
         match *arg.mal_type {
-            List(ref vec) | Vector(ref vec) => {
+            List(ref vec) | Vector(MalVector { ref vec, .. }) => {
                 reult_vec.extend_from_slice(vec);
             }
             _ => Err(MalError::RustFunction("Invalid argument".to_string()))?,
@@ -217,7 +217,7 @@ fn empty(args: &[MalValue], _env: &mut Env) -> MalResult {
     arg_count_eq(args, 1)?;
 
     match *args[0].mal_type {
-        List(ref vec) | Vector(ref vec) => {
+        List(ref vec) | Vector(MalVector { ref vec, .. }) => {
             if vec.is_empty() {
                 Ok(MalValue::new(True))
             } else {
@@ -239,7 +239,9 @@ fn count(args: &[MalValue], _env: &mut Env) -> MalResult {
     arg_count_eq(args, 1)?;
 
     match *args[0].mal_type {
-        List(ref vec) | Vector(ref vec) => Ok(MalValue::new(Number(vec.len() as f64))),
+        List(ref vec) | Vector(MalVector { ref vec, .. }) => {
+            Ok(MalValue::new(Number(vec.len() as f64)))
+        }
         Str(ref s) => Ok(MalValue::new(Number(s.len() as f64))),
         Nil => Ok(MalValue::new(Number(0.))),
         _ => Err(MalError::RustFunction("Invalid argument".to_string())),
@@ -251,7 +253,7 @@ fn nth(args: &[MalValue], _env: &mut Env) -> MalResult {
 
     let index = get_number_arg(&args[1])?;
 
-    if let List(ref vec) | Vector(ref vec) = *args[0].mal_type {
+    if let List(ref vec) | Vector(MalVector { ref vec, .. }) = *args[0].mal_type {
         vec.get(index as usize)
             .cloned()
             .ok_or_else(|| MalError::RustFunction("nth: index out of range".to_string()))
@@ -264,7 +266,9 @@ fn first(args: &[MalValue], _env: &mut Env) -> MalResult {
     arg_count_eq(args, 1)?;
 
     match *args[0].mal_type {
-        List(ref vec) | Vector(ref vec) => Ok(vec.get(0).cloned().unwrap_or_else(MalValue::nil)),
+        List(ref vec) | Vector(MalVector { ref vec, .. }) => {
+            Ok(vec.get(0).cloned().unwrap_or_else(MalValue::nil))
+        }
         Nil => Ok(MalValue::nil()),
         _ => Err(MalError::RustFunction("Invalid argument".to_string())),
     }
@@ -274,7 +278,7 @@ fn rest(args: &[MalValue], _env: &mut Env) -> MalResult {
     arg_count_eq(args, 1)?;
 
     match *args[0].mal_type {
-        List(ref vec) | Vector(ref vec) => Ok(if vec.is_empty() {
+        List(ref vec) | Vector(MalVector { ref vec, .. }) => Ok(if vec.is_empty() {
             MalValue::new(List(Vec::new()))
         } else {
             MalValue::new(List(Vec::from(&vec[1..])))
@@ -296,12 +300,12 @@ fn conj(args: &[MalValue], _env: &mut Env) -> MalResult {
 
             Ok(MalValue::new(List(new_vec)))
         }
-        Vector(ref vec) => {
+        Vector(MalVector { ref vec, .. }) => {
             let mut new_vec = Vec::with_capacity(vec.len() + args.len() - 1);
             new_vec.extend_from_slice(vec);
             new_vec.extend_from_slice(&args[1..]);
 
-            Ok(MalValue::new(Vector(new_vec)))
+            Ok(MalValue::new_vector(new_vec))
         }
         _ => Err(MalError::RustFunction("Invalid argument".to_string())),
     }
@@ -521,7 +525,11 @@ fn apply(args: &[MalValue], env: &mut Env) -> MalResult {
 
     let last_args_list = args.last().unwrap();
 
-    if let List(ref last_args) | Vector(ref last_args) = *last_args_list.mal_type {
+    if let List(ref last_args)
+    | Vector(MalVector {
+        vec: ref last_args, ..
+    }) = *last_args_list.mal_type
+    {
         let mut vec = Vec::with_capacity(args.len() + last_args.len() - 2);
         vec.extend_from_slice(&args[1..args.len() - 1]);
         vec.extend_from_slice(&last_args);
@@ -539,7 +547,7 @@ fn map(args: &[MalValue], env: &mut Env) -> MalResult {
 
     let function = &args[0];
 
-    if let List(ref vec) | Vector(ref vec) = *args[1].mal_type {
+    if let List(ref vec) | Vector(MalVector { ref vec, .. }) = *args[1].mal_type {
         let result_vec: Result<_, _> = vec
             .iter()
             .map(|elem| core_apply(function, slice::from_ref(elem), env))
@@ -588,7 +596,7 @@ fn keyword(args: &[MalValue], _env: &mut Env) -> MalResult {
 }
 
 fn vector(args: &[MalValue], _env: &mut Env) -> MalResult {
-    Ok(MalValue::new(Vector(Vec::from(args))))
+    Ok(MalValue::new_vector(Vec::from(args)))
 }
 
 fn is_vector(args: &[MalValue], _env: &mut Env) -> MalResult {
@@ -769,9 +777,9 @@ fn seq(args: &[MalValue], _env: &mut Env) -> MalResult {
     arg_count_eq(args, 1)?;
 
     match *args[0].mal_type {
-        List(ref vec) | Vector(ref vec) if vec.is_empty() => Ok(MalValue::nil()),
+        List(ref vec) | Vector(MalVector { ref vec, .. }) if vec.is_empty() => Ok(MalValue::nil()),
         List(_) => Ok(args[0].clone()),
-        Vector(ref vec) => Ok(MalValue::new(List(vec.clone()))),
+        Vector(ref mal_vec) => Ok(MalValue::new(List(mal_vec.vec.clone()))),
         Str(ref str_val) if str_val.is_empty() => Ok(MalValue::nil()),
         Str(ref str_val) => {
             let chars = str_val

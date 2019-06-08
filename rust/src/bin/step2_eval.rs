@@ -146,7 +146,7 @@ fn eval_ast(ast: &MalValue, env: &Env) -> MalResult {
     match *ast.mal_type {
         Symbol(ref s) => env.get(&s),
         List(ref list) => Ok(MalValue::new(List(eval_ast_seq(list, env)?))),
-        Vector(ref vec) => Ok(MalValue::new(Vector(eval_ast_seq(vec, env)?))),
+        Vector(ref mal_vec) => Ok(MalValue::new_vector(eval_ast_seq(&mal_vec.vec, env)?)),
         Map(ref mal_map) => eval_map(mal_map, env),
         _ => Ok(ast.clone()),
     }

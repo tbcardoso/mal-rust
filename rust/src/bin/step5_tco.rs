@@ -6,7 +6,7 @@ use malrs::reader::read_str;
 use malrs::readline::Readline;
 use malrs::types::MalValueType;
 use malrs::types::MalValueType::{List, MalFunc, Map, Nil, RustFunc, Symbol, Vector};
-use malrs::types::{MalError, MalMap, MalResult, MalValue};
+use malrs::types::{MalError, MalMap, MalResult, MalValue, MalVector};
 use std::iter::once;
 
 fn main() {
@@ -110,7 +110,7 @@ fn eval_ast(ast: &MalValue, env: &mut Env) -> MalResult {
     match *ast.mal_type {
         Symbol(ref s) => env.get(&s),
         List(ref list) => Ok(MalValue::new(List(eval_ast_seq(list, env)?))),
-        Vector(ref vec) => Ok(MalValue::new(Vector(eval_ast_seq(vec, env)?))),
+        Vector(ref mal_vec) => Ok(MalValue::new_vector(eval_ast_seq(&mal_vec.vec, env)?)),
         Map(ref mal_map) => eval_map(mal_map, env),
         _ => Ok(ast.clone()),
     }
@@ -194,7 +194,10 @@ fn apply_special_form_let(args: &[MalValue], env: &Env) -> ApplyResult {
     }
 
     let bindings = match *args[0].mal_type {
-        List(ref bindings) | Vector(ref bindings) => Ok(bindings.as_slice()),
+        List(ref bindings)
+        | Vector(MalVector {
+            vec: ref bindings, ..
+        }) => Ok(bindings.as_slice()),
         _ => Err(MalError::SpecialForm(
             "let* first argument must be a list or a vector".to_string(),
         )),
@@ -234,7 +237,10 @@ fn apply_special_form_fn(args: &[MalValue], env: &Env) -> ApplyResult {
     }
 
     let bindings = match *args[0].mal_type {
-        List(ref bindings) | Vector(ref bindings) => Ok(bindings.as_slice()),
+        List(ref bindings)
+        | Vector(MalVector {
+            vec: ref bindings, ..
+        }) => Ok(bindings.as_slice()),
         _ => Err(MalError::SpecialForm(
             "fn* first argument must be a list or a vector".to_string(),
         )),

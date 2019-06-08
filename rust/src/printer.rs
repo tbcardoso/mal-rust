@@ -19,7 +19,7 @@ pub fn pr_str(mal_value: &MalValue, print_readably: bool) -> String {
         }
         Keyword(ref val) => format!(":{}", val),
         List(ref list) => pr_seq(list, "(", ")", print_readably),
-        Vector(ref vec) => pr_seq(vec, "[", "]", print_readably),
+        Vector(ref mal_vec) => pr_seq(&mal_vec.vec, "[", "]", print_readably),
         Map(ref mal_map) => pr_map(mal_map, print_readably),
         RustFunc(_) => "#<rust_function>".to_string(),
         MalFunc(_) => "#<function>".to_string(),
@@ -191,11 +191,11 @@ mod tests {
         assert_eq!(pr_str(&MalValue::new(List(Vec::new())), true), "()");
         assert_eq!(
             pr_str(
-                &MalValue::new(Vector(vec![
+                &MalValue::new_vector(vec![
                     MalValue::new(Symbol("x".to_string())),
                     MalValue::new(Number(456.)),
                     MalValue::new(Symbol("y".to_string())),
-                ])),
+                ]),
                 true,
             ),
             "[x 456 y]"

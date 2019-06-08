@@ -71,10 +71,10 @@ fn read_list(reader: &mut Reader) -> MalResult {
 }
 
 fn read_vector(reader: &mut Reader) -> MalResult {
-    Ok(MalValue::new(Vector(read_seq(
+    Ok(MalValue::new_vector(read_seq(
         reader,
         &MalTokenType::RBracket,
-    )?)))
+    )?))
 }
 
 fn read_map(reader: &mut Reader) -> MalResult {
@@ -314,35 +314,35 @@ mod tests {
 
     #[test]
     fn test_read_str_vector() {
-        assert_eq!(read_str("[]"), Ok(MalValue::new(Vector(Vec::new()))));
+        assert_eq!(read_str("[]"), Ok(MalValue::new_vector(Vec::new())));
 
         assert_eq!(
             read_str("[\"abc\"]"),
-            Ok(MalValue::new(Vector(vec![MalValue::new(Str(
+            Ok(MalValue::new_vector(vec![MalValue::new(Str(
                 "abc".to_string()
-            )),])))
+            )),]))
         );
 
         assert_eq!(
             read_str("[x y 123.1]"),
-            Ok(MalValue::new(Vector(vec![
+            Ok(MalValue::new_vector(vec![
                 MalValue::new(Symbol("x".to_string())),
                 MalValue::new(Symbol("y".to_string())),
                 MalValue::new(Number(123.1)),
-            ])))
+            ]))
         );
 
         assert_eq!(
             read_str("[z [i [j] 5] 123]"),
-            Ok(MalValue::new(Vector(vec![
+            Ok(MalValue::new_vector(vec![
                 MalValue::new(Symbol("z".to_string())),
-                MalValue::new(Vector(vec![
+                MalValue::new_vector(vec![
                     MalValue::new(Symbol("i".to_string())),
-                    MalValue::new(Vector(vec![MalValue::new(Symbol("j".to_string())),])),
+                    MalValue::new_vector(vec![MalValue::new(Symbol("j".to_string())),]),
                     MalValue::new(Number(5.)),
-                ])),
+                ]),
                 MalValue::new(Number(123.)),
-            ])))
+            ]))
         );
 
         match read_str("[1 2") {
