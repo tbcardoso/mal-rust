@@ -35,6 +35,7 @@ impl MalValue {
         MalValue::new(MalValueType::RustFunc(RustFunction {
             func,
             env: env.clone(),
+            meta: MalValue::nil(),
         }))
     }
 
@@ -67,27 +68,35 @@ impl MalValue {
     }
 
     pub fn clone_with_meta(&self, meta: MalValue) -> MalResult {
-        if let MalValueType::MalFunc(ref mal_func) = *self.mal_type {
-            Ok(MalValue::new(MalValueType::MalFunc(MalFunction {
-                body: mal_func.body.clone(),
-                parameters: mal_func.parameters.clone(),
-                outer_env: mal_func.outer_env.clone(),
-                is_macro: mal_func.is_macro,
-                meta,
-            })))
-        } else {
-            Err(MalError::Evaluation(
-                "Type does not support meta attributes.".to_string(),
-            ))
+        match *self.mal_type {
+            MalValueType::MalFunc(ref mal_func) => {
+                Ok(MalValue::new(MalValueType::MalFunc(MalFunction {
+                    body: mal_func.body.clone(),
+                    parameters: mal_func.parameters.clone(),
+                    outer_env: mal_func.outer_env.clone(),
+                    is_macro: mal_func.is_macro,
+                    meta,
+                })))
+            }
+            MalValueType::RustFunc(ref rust_func) => {
+                Ok(MalValue::new(MalValueType::RustFunc(RustFunction {
+                    func: rust_func.func,
+                    env: rust_func.env.clone(),
+                    meta,
+                })))
+            }
+            _ => Err(MalError::Evaluation(
+                "The given type does not support meta attributes.".to_string(),
+            )),
         }
     }
 
     pub fn get_meta(&self) -> MalResult {
         match *self.mal_type {
             MalValueType::MalFunc(ref mal_func) => Ok(mal_func.meta.clone()),
-            MalValueType::RustFunc(_) => Ok(MalValue::nil()),
+            MalValueType::RustFunc(ref rust_func) => Ok(rust_func.meta.clone()),
             _ => Err(MalError::RustFunction(
-                "Type does not support meta attributes.".to_string(),
+                "The given type does not support meta attributes.".to_string(),
             )),
         }
     }
@@ -369,6 +378,7 @@ impl<'a> FusedIterator for MalMapIter<'a> {}
 pub struct RustFunction {
     pub func: fn(&[MalValue], &mut Env) -> MalResult,
     pub env: Env,
+    pub meta: MalValue,
 }
 
 impl fmt::Debug for RustFunction {
