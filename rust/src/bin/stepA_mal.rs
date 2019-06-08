@@ -29,6 +29,8 @@ fn create_root_env(args: &[String]) -> Env {
 
     core::set_eval_func(eval);
 
+    env.set("*host-language*", MalValue::new(Str("rust".to_string())));
+
     env.set(
         "*ARGV*",
         MalValue::new(List(
@@ -76,6 +78,8 @@ fn run_file(file_path: &str, env: &mut Env) -> ! {
 }
 
 fn run_repl(env: &mut Env) {
+    rep(r#"(println (str "Mal [" *host-language* "]"))"#, env).unwrap();
+
     let mut readline = Readline::new();
 
     loop {
