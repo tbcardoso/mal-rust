@@ -44,6 +44,7 @@ impl MalValue {
             parameters,
             outer_env,
             is_macro: false,
+            meta: MalValue::nil(),
         }))
     }
 
@@ -53,6 +54,7 @@ impl MalValue {
             parameters,
             outer_env,
             is_macro: true,
+            meta: MalValue::nil(),
         }))
     }
 
@@ -62,6 +64,32 @@ impl MalValue {
 
     pub fn nil() -> MalValue {
         MalValue::new(MalValueType::Nil)
+    }
+
+    pub fn clone_with_meta(&self, meta: MalValue) -> MalResult {
+        if let MalValueType::MalFunc(ref mal_func) = *self.mal_type {
+            Ok(MalValue::new(MalValueType::MalFunc(MalFunction {
+                body: mal_func.body.clone(),
+                parameters: mal_func.parameters.clone(),
+                outer_env: mal_func.outer_env.clone(),
+                is_macro: mal_func.is_macro,
+                meta,
+            })))
+        } else {
+            Err(MalError::Evaluation(
+                "Type does not support meta attributes.".to_string(),
+            ))
+        }
+    }
+
+    pub fn get_meta(&self) -> MalResult {
+        match *self.mal_type {
+            MalValueType::MalFunc(ref mal_func) => Ok(mal_func.meta.clone()),
+            MalValueType::RustFunc(_) => Ok(MalValue::nil()),
+            _ => Err(MalError::RustFunction(
+                "Type does not support meta attributes.".to_string(),
+            )),
+        }
     }
 
     pub fn is_list(&self) -> bool {
@@ -332,6 +360,7 @@ pub struct MalFunction {
     pub parameters: Vec<String>,
     pub outer_env: Env,
     pub is_macro: bool,
+    pub meta: MalValue,
 }
 
 #[derive(Debug, PartialEq)]

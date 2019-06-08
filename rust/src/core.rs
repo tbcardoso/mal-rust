@@ -65,6 +65,8 @@ pub fn ns(env: &Env) -> Vec<(&'static str, MalValue)> {
         ("keys", MalValue::new_rust_func(keys, env)),
         ("vals", MalValue::new_rust_func(vals, env)),
         ("readline", MalValue::new_rust_func(readline, env)),
+        ("meta", MalValue::new_rust_func(meta, env)),
+        ("with-meta", MalValue::new_rust_func(with_meta, env)),
     ]
 }
 
@@ -683,4 +685,16 @@ fn readline(args: &[MalValue], _env: &mut Env) -> MalResult {
             "Argument must be a string.".to_string(),
         ))
     }
+}
+
+fn meta(args: &[MalValue], _env: &mut Env) -> MalResult {
+    arg_count_eq(args, 1)?;
+
+    args[0].get_meta()
+}
+
+fn with_meta(args: &[MalValue], _env: &mut Env) -> MalResult {
+    arg_count_eq(args, 2)?;
+
+    args[0].clone_with_meta(args[1].clone())
 }
