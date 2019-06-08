@@ -8,7 +8,7 @@ use malrs::reader::read_str;
 use malrs::readline::Readline;
 use malrs::types::MalValueType;
 use malrs::types::MalValueType::{List, MalFunc, Map, Nil, RustFunc, Str, Symbol, Vector};
-use malrs::types::{MalError, MalMap, MalResult, MalValue, MalVector};
+use malrs::types::{MalError, MalList, MalMap, MalResult, MalValue, MalVector};
 use std::iter::once;
 use std::{env, process};
 
@@ -33,12 +33,12 @@ fn create_root_env(args: &[String]) -> Env {
 
     env.set(
         "*ARGV*",
-        MalValue::new(List(
+        MalValue::new_list(
             args.iter()
                 .skip(2)
                 .map(|arg| MalValue::new(Str(arg.clone())))
                 .collect(),
-        )),
+        ),
     );
 
     for (name, val) in core::ns(&env) {
@@ -129,8 +129,8 @@ fn eval(ast: &MalValue, env: &mut Env) -> MalResult {
         cur_ast = macroexpand(&cur_ast, env)?;
 
         match *cur_ast.mal_type {
-            List(ref list) if list.is_empty() => return Ok(cur_ast.clone()),
-            List(ref list) => {
+            List(ref mal_list) if mal_list.vec.is_empty() => return Ok(cur_ast.clone()),
+            List(MalList { vec: ref list, .. }) => {
                 let first_arg = &list[0];
 
                 let apply_result = match *first_arg.mal_type {
@@ -183,7 +183,7 @@ fn eval(ast: &MalValue, env: &mut Env) -> MalResult {
 fn eval_ast(ast: &MalValue, env: &mut Env) -> MalResult {
     match *ast.mal_type {
         Symbol(ref s) => env.get(&s),
-        List(ref list) => Ok(MalValue::new(List(eval_ast_seq(list, env)?))),
+        List(ref mal_list) => Ok(MalValue::new_list(eval_ast_seq(&mal_list.vec, env)?)),
         Vector(ref mal_vec) => Ok(MalValue::new_vector(eval_ast_seq(&mal_vec.vec, env)?)),
         Map(ref mal_map) => eval_map(mal_map, env),
         _ => Ok(ast.clone()),
@@ -208,7 +208,10 @@ fn eval_map(mal_map: &MalMap, env: &mut Env) -> MalResult {
 fn apply_ast(ast: &MalValue, env: &mut Env) -> ApplyResult {
     let evaluated_list_ast = eval_ast(ast, env)?;
     match *evaluated_list_ast.mal_type {
-        List(ref evaluated_list) => match *evaluated_list
+        List(MalList {
+            vec: ref evaluated_list,
+            ..
+        }) => match *evaluated_list
             .get(0)
             .expect("Evaluation of non-empty list resulted in empty list.")
             .mal_type
@@ -237,7 +240,7 @@ fn apply_ast(ast: &MalValue, env: &mut Env) -> ApplyResult {
 }
 
 fn get_macro_function(ast: &MalValue, env: &Env) -> Option<MalValue> {
-    if let List(ref vec) = *ast.mal_type {
+    if let List(MalList { ref vec, .. }) = *ast.mal_type {
         let first = vec.get(0)?;
 
         if let Symbol(ref symbol) = *first.mal_type {
@@ -259,7 +262,8 @@ fn macroexpand(ast: &MalValue, env: &mut Env) -> MalResult {
 
     while let Some(ref macro_val) = get_macro_function(&ast, env) {
         if let MalFunc(ref function) = *macro_val.mal_type {
-            if let List(ref vec) | Vector(MalVector { ref vec, .. }) = *ast.mal_type {
+            if let List(MalList { ref vec, .. }) | Vector(MalVector { ref vec, .. }) = *ast.mal_type
+            {
                 let mut macro_env =
                     Env::with_binds(Some(&function.outer_env), &function.parameters, &vec[1..])?;
 
@@ -307,7 +311,9 @@ fn apply_special_form_let(args: &[MalValue], env: &Env) -> ApplyResult {
     }
 
     let bindings = match *args[0].mal_type {
-        List(ref bindings)
+        List(MalList {
+            vec: ref bindings, ..
+        })
         | Vector(MalVector {
             vec: ref bindings, ..
         }) => Ok(bindings.as_slice()),
@@ -350,7 +356,9 @@ fn apply_special_form_fn(args: &[MalValue], env: &Env) -> ApplyResult {
     }
 
     let bindings = match *args[0].mal_type {
-        List(ref bindings)
+        List(MalList {
+            vec: ref bindings, ..
+        })
         | Vector(MalVector {
             vec: ref bindings, ..
         }) => Ok(bindings.as_slice()),
@@ -437,7 +445,8 @@ fn apply_special_form_quasiquote(args: &[MalValue], env: &mut Env) -> ApplyResul
 
 fn quasiquote(ast: &MalValue) -> MalResult {
     match *ast.mal_type {
-        MalValueType::List(ref vec) | MalValueType::Vector(MalVector { ref vec, .. })
+        MalValueType::List(MalList { ref vec, .. })
+        | MalValueType::Vector(MalVector { ref vec, .. })
             if !vec.is_empty() =>
         {
             let elem0 = &vec[0];
@@ -452,7 +461,9 @@ fn quasiquote(ast: &MalValue) -> MalResult {
                         Ok(vec[1].clone())
                     }
                 }
-                MalValueType::List(ref inner_vec)
+                MalValueType::List(MalList {
+                    vec: ref inner_vec, ..
+                })
                 | MalValueType::Vector(MalVector {
                     vec: ref inner_vec, ..
                 }) if !inner_vec.is_empty() => match *inner_vec[0].mal_type {
@@ -463,30 +474,30 @@ fn quasiquote(ast: &MalValue) -> MalResult {
                                 inner_vec.len() - 1
                             )))
                         } else {
-                            Ok(MalValue::new(List(vec![
+                            Ok(MalValue::new_list(vec![
                                 MalValue::new(Symbol("concat".to_string())),
                                 inner_vec[1].clone(),
-                                quasiquote(&MalValue::new(List(vec[1..].to_vec())))?,
-                            ])))
+                                quasiquote(&MalValue::new_list(vec[1..].to_vec()))?,
+                            ]))
                         }
                     }
-                    _ => Ok(MalValue::new(List(vec![
+                    _ => Ok(MalValue::new_list(vec![
                         MalValue::new(Symbol("cons".to_string())),
                         quasiquote(elem0)?,
-                        quasiquote(&MalValue::new(List(vec[1..].to_vec())))?,
-                    ]))),
+                        quasiquote(&MalValue::new_list(vec[1..].to_vec()))?,
+                    ])),
                 },
-                _ => Ok(MalValue::new(List(vec![
+                _ => Ok(MalValue::new_list(vec![
                     MalValue::new(Symbol("cons".to_string())),
                     quasiquote(elem0)?,
-                    quasiquote(&MalValue::new(List(vec[1..].to_vec())))?,
-                ]))),
+                    quasiquote(&MalValue::new_list(vec[1..].to_vec()))?,
+                ])),
             }
         }
-        _ => Ok(MalValue::new(List(vec![
+        _ => Ok(MalValue::new_list(vec![
             MalValue::new(Symbol("quote".to_string())),
             ast.clone(),
-        ]))),
+        ])),
     }
 }
 
@@ -549,7 +560,10 @@ fn apply_special_form_try(args: &[MalValue], env: &mut Env) -> ApplyResult {
     let exception_symbol;
     let catch_expression;
 
-    if let List(ref catch_vec) = *args[1].mal_type {
+    if let List(MalList {
+        vec: ref catch_vec, ..
+    }) = *args[1].mal_type
+    {
         if catch_vec.is_empty() {
             return Err(MalError::SpecialForm(
                 "try* second argument must be a non-empty list".to_string(),

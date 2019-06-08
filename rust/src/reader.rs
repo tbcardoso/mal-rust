@@ -64,10 +64,7 @@ fn read_form(reader: &mut Reader) -> MalResult {
 }
 
 fn read_list(reader: &mut Reader) -> MalResult {
-    Ok(MalValue::new(List(read_seq(
-        reader,
-        &MalTokenType::RParen,
-    )?)))
+    Ok(MalValue::new_list(read_seq(reader, &MalTokenType::RParen)?))
 }
 
 fn read_vector(reader: &mut Reader) -> MalResult {
@@ -125,10 +122,10 @@ fn read_atom(reader: &mut Reader) -> MalResult {
 fn read_short_form(reader: &mut Reader, name: &str) -> MalResult {
     reader.next().unwrap();
 
-    Ok(MalValue::new(List(vec![
+    Ok(MalValue::new_list(vec![
         MalValue::new(Symbol(name.to_string())),
         read_form(reader)?,
-    ])))
+    ]))
 }
 
 fn read_with_meta(reader: &mut Reader) -> MalResult {
@@ -137,11 +134,11 @@ fn read_with_meta(reader: &mut Reader) -> MalResult {
     let meta = read_form(reader)?;
     let arg = read_form(reader)?;
 
-    Ok(MalValue::new(List(vec![
+    Ok(MalValue::new_list(vec![
         MalValue::new(Symbol("with-meta".to_string())),
         arg,
         meta,
-    ])))
+    ]))
 }
 
 #[cfg(test)]
@@ -275,35 +272,35 @@ mod tests {
 
     #[test]
     fn test_read_str_list() {
-        assert_eq!(read_str("()"), Ok(MalValue::new(List(Vec::new()))));
+        assert_eq!(read_str("()"), Ok(MalValue::new_list(Vec::new())));
 
         assert_eq!(
             read_str("(h)"),
-            Ok(MalValue::new(List(vec![MalValue::new(Symbol(
+            Ok(MalValue::new_list(vec![MalValue::new(Symbol(
                 "h".to_string()
-            )),])))
+            )),]))
         );
 
         assert_eq!(
             read_str("(- xy 123.1)"),
-            Ok(MalValue::new(List(vec![
+            Ok(MalValue::new_list(vec![
                 MalValue::new(Symbol("-".to_string())),
                 MalValue::new(Symbol("xy".to_string())),
                 MalValue::new(Number(123.1)),
-            ])))
+            ]))
         );
 
         assert_eq!(
             read_str("(* (f (g) 1) 123)"),
-            Ok(MalValue::new(List(vec![
+            Ok(MalValue::new_list(vec![
                 MalValue::new(Symbol("*".to_string())),
-                MalValue::new(List(vec![
+                MalValue::new_list(vec![
                     MalValue::new(Symbol("f".to_string())),
-                    MalValue::new(List(vec![MalValue::new(Symbol("g".to_string())),])),
+                    MalValue::new_list(vec![MalValue::new(Symbol("g".to_string())),]),
                     MalValue::new(Number(1.)),
-                ])),
+                ]),
                 MalValue::new(Number(123.)),
-            ])))
+            ]))
         );
 
         match read_str("(h 12") {
@@ -414,10 +411,10 @@ mod tests {
     fn test_read_str_deref() {
         assert_eq!(
             read_str("@a"),
-            Ok(MalValue::new(List(vec![
+            Ok(MalValue::new_list(vec![
                 MalValue::new(Symbol("deref".to_string())),
                 MalValue::new(Symbol("a".to_string())),
-            ])))
+            ]))
         );
 
         match read_str("@") {
@@ -430,10 +427,10 @@ mod tests {
     fn test_read_str_quote() {
         assert_eq!(
             read_str("'a"),
-            Ok(MalValue::new(List(vec![
+            Ok(MalValue::new_list(vec![
                 MalValue::new(Symbol("quote".to_string())),
                 MalValue::new(Symbol("a".to_string())),
-            ])))
+            ]))
         );
 
         match read_str("'") {
@@ -446,10 +443,10 @@ mod tests {
     fn test_read_str_quasiquote() {
         assert_eq!(
             read_str("`a"),
-            Ok(MalValue::new(List(vec![
+            Ok(MalValue::new_list(vec![
                 MalValue::new(Symbol("quasiquote".to_string())),
                 MalValue::new(Symbol("a".to_string())),
-            ])))
+            ]))
         );
 
         match read_str("`") {
@@ -462,10 +459,10 @@ mod tests {
     fn test_read_str_unquote() {
         assert_eq!(
             read_str("~a"),
-            Ok(MalValue::new(List(vec![
+            Ok(MalValue::new_list(vec![
                 MalValue::new(Symbol("unquote".to_string())),
                 MalValue::new(Symbol("a".to_string())),
-            ])))
+            ]))
         );
 
         match read_str("~") {
@@ -478,10 +475,10 @@ mod tests {
     fn test_read_str_splice_unquote() {
         assert_eq!(
             read_str("~@a"),
-            Ok(MalValue::new(List(vec![
+            Ok(MalValue::new_list(vec![
                 MalValue::new(Symbol("splice-unquote".to_string())),
                 MalValue::new(Symbol("a".to_string())),
-            ])))
+            ]))
         );
 
         match read_str("~@") {
@@ -494,11 +491,11 @@ mod tests {
     fn test_read_str_with_meta() {
         assert_eq!(
             read_str("^a +"),
-            Ok(MalValue::new(List(vec![
+            Ok(MalValue::new_list(vec![
                 MalValue::new(Symbol("with-meta".to_string())),
                 MalValue::new(Symbol("+".to_string())),
                 MalValue::new(Symbol("a".to_string())),
-            ])))
+            ]))
         );
 
         match read_str("^") {

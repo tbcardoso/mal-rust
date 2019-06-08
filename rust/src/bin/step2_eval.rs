@@ -3,7 +3,7 @@ use malrs::printer::pr_str;
 use malrs::reader::read_str;
 use malrs::readline::Readline;
 use malrs::types::MalValueType::{List, Map, Number, RustFunc, Symbol, Vector};
-use malrs::types::{MalError, MalMap, MalResult, MalValue};
+use malrs::types::{MalError, MalList, MalMap, MalResult, MalValue};
 use std::iter::once;
 
 fn main() {
@@ -105,13 +105,16 @@ fn read(s: &str) -> MalResult {
 
 fn eval(ast: &MalValue, env: &Env) -> MalResult {
     match *ast.mal_type {
-        List(ref list) => {
+        List(MalList { vec: ref list, .. }) => {
             if list.is_empty() {
                 Ok(ast.clone())
             } else {
                 let evaluated_list_ast = eval_ast(ast, env)?;
                 match *evaluated_list_ast.mal_type {
-                    List(ref evaluated_list) => {
+                    List(MalList {
+                        vec: ref evaluated_list,
+                        ..
+                    }) => {
                         if let RustFunc(ref rust_function) = *evaluated_list
                             .get(0)
                             .expect("Evaluation of non-empty list resulted in empty list.")
@@ -145,7 +148,7 @@ fn print(mal_val: &MalValue) -> String {
 fn eval_ast(ast: &MalValue, env: &Env) -> MalResult {
     match *ast.mal_type {
         Symbol(ref s) => env.get(&s),
-        List(ref list) => Ok(MalValue::new(List(eval_ast_seq(list, env)?))),
+        List(MalList { vec: ref list, .. }) => Ok(MalValue::new_list(eval_ast_seq(list, env)?)),
         Vector(ref mal_vec) => Ok(MalValue::new_vector(eval_ast_seq(&mal_vec.vec, env)?)),
         Map(ref mal_map) => eval_map(mal_map, env),
         _ => Ok(ast.clone()),

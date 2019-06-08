@@ -63,6 +63,13 @@ impl MalValue {
         MalValue::new(MalValueType::Atom(RefCell::new(value)))
     }
 
+    pub fn new_list(vec: Vec<MalValue>) -> MalValue {
+        MalValue::new(MalValueType::List(MalList {
+            vec,
+            meta: MalValue::nil(),
+        }))
+    }
+
     pub fn new_vector(vec: Vec<MalValue>) -> MalValue {
         MalValue::new(MalValueType::Vector(MalVector {
             vec,
@@ -96,6 +103,10 @@ impl MalValue {
                     meta,
                 })))
             }
+            MalValueType::List(ref mal_list) => Ok(MalValue::new(MalValueType::List(MalList {
+                vec: mal_list.vec.clone(),
+                meta,
+            }))),
             MalValueType::Vector(ref mal_vec) => {
                 Ok(MalValue::new(MalValueType::Vector(MalVector {
                     vec: mal_vec.vec.clone(),
@@ -113,6 +124,7 @@ impl MalValue {
         match *self.mal_type {
             MalValueType::MalFunc(ref mal_func) => Ok(mal_func.meta.clone()),
             MalValueType::RustFunc(ref rust_func) => Ok(rust_func.meta.clone()),
+            MalValueType::List(ref mal_list) => Ok(mal_list.meta.clone()),
             MalValueType::Vector(ref mal_vec) => Ok(mal_vec.meta.clone()),
             MalValueType::Map(ref mal_map) => Ok(mal_map.meta.clone()),
             _ => Err(MalError::RustFunction(
@@ -186,7 +198,7 @@ pub enum MalValueType {
     Symbol(String),
     Str(String),
     Keyword(String),
-    List(Vec<MalValue>),
+    List(MalList),
     Vector(MalVector),
     Map(MalMap),
     RustFunc(RustFunction),
@@ -206,16 +218,22 @@ impl PartialEq for MalValueType {
             (Symbol(l), Symbol(r)) => l == r,
             (Str(l), Str(r)) => l == r,
             (Keyword(l), Keyword(r)) => l == r,
-            (List(l), List(r))
+            (List(MalList { vec: l, .. }), List(MalList { vec: r, .. }))
             | (Vector(MalVector { vec: l, .. }), Vector(MalVector { vec: r, .. }))
-            | (List(l), Vector(MalVector { vec: r, .. }))
-            | (Vector(MalVector { vec: l, .. }), List(r)) => l == r,
+            | (List(MalList { vec: l, .. }), Vector(MalVector { vec: r, .. }))
+            | (Vector(MalVector { vec: l, .. }), List(MalList { vec: r, .. })) => l == r,
             (Map(l), Map(r)) => l == r,
             (RustFunc(l), RustFunc(r)) => l == r,
             (MalFunc(l), MalFunc(r)) => l == r,
             _ => false,
         }
     }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct MalList {
+    pub vec: Vec<MalValue>,
+    pub meta: MalValue,
 }
 
 #[derive(Debug, PartialEq)]

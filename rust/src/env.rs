@@ -1,4 +1,3 @@
-use crate::types::MalValueType::List;
 use crate::types::{MalError, MalResult, MalValue};
 use core::fmt;
 use std::cell::RefCell;
@@ -56,7 +55,7 @@ impl Env {
 
                 env.set(
                     binds[i + 1].as_ref(),
-                    MalValue::new(List(exprs[i..].to_vec())),
+                    MalValue::new_list(exprs[i..].to_vec()),
                 );
 
                 break;
@@ -248,7 +247,7 @@ mod tests {
         .unwrap();
 
         assert_eq!(env.get("s1"), Ok(val1));
-        assert_eq!(env.get("v"), Ok(MalValue::new(List(vec![val2, val3,]))));
+        assert_eq!(env.get("v"), Ok(MalValue::new_list(vec![val2, val3,])));
     }
 
     #[test]
@@ -266,7 +265,7 @@ mod tests {
 
         assert_eq!(
             env.get("v"),
-            Ok(MalValue::new(List(vec![val1, val2, val3,])))
+            Ok(MalValue::new_list(vec![val1, val2, val3,]))
         );
     }
 }

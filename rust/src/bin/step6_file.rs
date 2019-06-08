@@ -4,9 +4,9 @@ use malrs::env::Env;
 use malrs::printer::pr_str;
 use malrs::reader::read_str;
 use malrs::readline::Readline;
-use malrs::types::MalValueType;
 use malrs::types::MalValueType::{List, MalFunc, Map, Nil, RustFunc, Str, Symbol, Vector};
 use malrs::types::{MalError, MalMap, MalResult, MalValue, MalVector};
+use malrs::types::{MalList, MalValueType};
 use std::iter::once;
 use std::{env, process};
 
@@ -29,12 +29,12 @@ fn create_root_env(args: &[String]) -> Env {
 
     env.set(
         "*ARGV*",
-        MalValue::new(List(
+        MalValue::new_list(
             args.iter()
                 .skip(2)
                 .map(|arg| MalValue::new(Str(arg.clone())))
                 .collect(),
-        )),
+        ),
     );
 
     for (name, val) in core::ns(&env) {
@@ -111,8 +111,8 @@ fn eval(ast: &MalValue, env: &mut Env) -> MalResult {
 
     loop {
         match *cur_ast.mal_type {
-            List(ref list) if list.is_empty() => return Ok(cur_ast.clone()),
-            List(ref list) => {
+            List(ref mal_list) if mal_list.vec.is_empty() => return Ok(cur_ast.clone()),
+            List(MalList { vec: ref list, .. }) => {
                 let first_arg = &list[0];
 
                 let apply_result = match *first_arg.mal_type {
@@ -150,7 +150,7 @@ fn eval(ast: &MalValue, env: &mut Env) -> MalResult {
 fn eval_ast(ast: &MalValue, env: &mut Env) -> MalResult {
     match *ast.mal_type {
         Symbol(ref s) => env.get(&s),
-        List(ref list) => Ok(MalValue::new(List(eval_ast_seq(list, env)?))),
+        List(MalList { vec: ref list, .. }) => Ok(MalValue::new_list(eval_ast_seq(list, env)?)),
         Vector(ref mal_vec) => Ok(MalValue::new_vector(eval_ast_seq(&mal_vec.vec, env)?)),
         Map(ref mal_map) => eval_map(mal_map, env),
         _ => Ok(ast.clone()),
@@ -175,7 +175,10 @@ fn eval_map(mal_map: &MalMap, env: &mut Env) -> MalResult {
 fn apply_ast(ast: &MalValue, env: &mut Env) -> ApplyResult {
     let evaluated_list_ast = eval_ast(ast, env)?;
     match *evaluated_list_ast.mal_type {
-        List(ref evaluated_list) => match *evaluated_list
+        List(MalList {
+            vec: ref evaluated_list,
+            ..
+        }) => match *evaluated_list
             .get(0)
             .expect("Evaluation of non-empty list resulted in empty list.")
             .mal_type
@@ -235,7 +238,9 @@ fn apply_special_form_let(args: &[MalValue], env: &Env) -> ApplyResult {
     }
 
     let bindings = match *args[0].mal_type {
-        List(ref bindings)
+        List(MalList {
+            vec: ref bindings, ..
+        })
         | Vector(MalVector {
             vec: ref bindings, ..
         }) => Ok(bindings.as_slice()),
@@ -278,7 +283,9 @@ fn apply_special_form_fn(args: &[MalValue], env: &Env) -> ApplyResult {
     }
 
     let bindings = match *args[0].mal_type {
-        List(ref bindings)
+        List(MalList {
+            vec: ref bindings, ..
+        })
         | Vector(MalVector {
             vec: ref bindings, ..
         }) => Ok(bindings.as_slice()),
