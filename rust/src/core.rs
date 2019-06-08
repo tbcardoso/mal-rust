@@ -10,6 +10,7 @@ use rustyline::Editor;
 use std::error::Error;
 use std::fs;
 use std::slice;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 pub fn ns(env: &Env) -> Vec<(&'static str, MalValue)> {
     vec![
@@ -71,6 +72,7 @@ pub fn ns(env: &Env) -> Vec<(&'static str, MalValue)> {
         ("number?", MalValue::new_rust_func(is_number, env)),
         ("fn?", MalValue::new_rust_func(is_fn, env)),
         ("macro?", MalValue::new_rust_func(is_macro, env)),
+        ("time-ms", MalValue::new_rust_func(time_ms, env)),
     ]
 }
 
@@ -725,4 +727,15 @@ fn is_macro(args: &[MalValue], _env: &mut Env) -> MalResult {
     arg_count_eq(args, 1)?;
 
     Ok(MalValue::new_boolean(args[0].is_macro()))
+}
+
+fn time_ms(args: &[MalValue], _env: &mut Env) -> MalResult {
+    arg_count_eq(args, 0)?;
+
+    let millis = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|_| MalError::RustFunction("Could not calculate the current time.".to_string()))?
+        .as_millis();
+
+    Ok(MalValue::new(Number(millis as f64)))
 }
