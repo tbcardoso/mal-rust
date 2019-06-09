@@ -45,6 +45,12 @@ fn create_root_env(args: &[String]) -> Env {
         env.set(name, val);
     }
 
+    rep(r#"(def! *gensym-counter* (atom 0))"#, &mut env).unwrap();
+    rep(
+        r#"(def! gensym (fn* [] (symbol (str "G__" (swap! *gensym-counter* (fn* [x] (+ 1 x)))))))"#,
+        &mut env,
+    )
+    .unwrap();
     rep("(def! not (fn* (a) (if a false true)))", &mut env).unwrap();
     rep(
         r#"(def! load-file (fn* (f) (eval (read-string (str "(do " (slurp f) ")")))))"#,
@@ -56,11 +62,7 @@ fn create_root_env(args: &[String]) -> Env {
         &mut env,
     )
     .unwrap();
-    rep(
-        r#"(defmacro! or (fn* (& xs) (if (empty? xs) nil (if (= 1 (count xs)) (first xs) `(let* (or_FIXME ~(first xs)) (if or_FIXME or_FIXME (or ~@(rest xs))))))))"#,
-        &mut env,
-    )
-    .unwrap();
+    rep(r#"(defmacro! or (fn* (& xs) (if (empty? xs) nil (if (= 1 (count xs)) (first xs) (let* (condvar (gensym)) `(let* (~condvar ~(first xs)) (if ~condvar ~condvar (or ~@(rest xs)))))))))"#, &mut env).unwrap();
 
     env
 }
