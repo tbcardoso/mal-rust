@@ -1,7 +1,6 @@
 # malrs - mal in Rust
 
 Another implementation of [mal](https://github.com/kanaka/mal) in Rust.
-This is work in progress.
 
 ## Build and Run
 
